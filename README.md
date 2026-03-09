@@ -60,10 +60,6 @@ Open http://localhost:3000
 
 ---
 
-## Deployment
-See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for deploying to Netlify + Render + MongoDB Atlas.
-
----
 
 ## Features
 - 🥗 AI-generated meal plans (Free: 1-day, Premium: 7-day personalized)
