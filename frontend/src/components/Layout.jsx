@@ -36,7 +36,7 @@ export default function Layout() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
   };
 
   const SidebarContent = () => (
@@ -76,7 +76,7 @@ export default function Layout() {
               `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? 'bg-sage-600 text-white shadow-sm'
-                  : 'text-sage-700 hover:bg-sage-100 hover:text-sage-900'
+                  : 'text-sage-700 dark:text-gray-300 hover:bg-sage-100 dark:hover:bg-gray-800 hover:text-sage-900 dark:hover:text-white'
               } ${item.premium && !user?.isPremium ? 'opacity-60' : ''}`
             }
           >
