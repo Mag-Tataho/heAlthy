@@ -14,20 +14,48 @@ const suggestions = [
 
 export default function Chat() {
   const { user } = useAuth();
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      content: `Hi ${user?.name?.split(' ')[0] || 'there'}! 👋 I'm your personal nutrition coach powered by Groq AI. I can help with meal suggestions, nutrition questions, and personalized advice based on your profile. What's on your mind?`,
-    },
-  ]);
+  const storageKey = `healthy_chat_${user?._id || user?.id || 'guest'}`;
+
+  const getInitialMessages = () => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      {
+        role: 'assistant',
+        content: `Hi ${user?.name?.split(' ')[0] || 'there'}! 👋 I'm your personal nutrition coach powered by Groq AI. I can help with meal suggestions, nutrition questions, and personalized advice based on your profile. What's on your mind?`,
+      },
+    ];
+  };
+
+  const [messages, setMessages] = useState(getInitialMessages);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const bottomRef = useRef(null);
 
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(messages));
+    } catch {}
+  }, [messages, storageKey]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const clearChat = () => {
+    const fresh = [
+      {
+        role: 'assistant',
+        content: `Hi ${user?.name?.split(' ')[0] || 'there'}! 👋 I'm your personal nutrition coach powered by Groq AI. I can help with meal suggestions, nutrition questions, and personalized advice based on your profile. What's on your mind?`,
+      },
+    ];
+    setMessages(fresh);
+    localStorage.removeItem(storageKey);
+  };
 
   if (!user?.isPremium) {
     return (
@@ -80,6 +108,12 @@ export default function Chat() {
             <p className="text-xs text-sage-500 dark:text-gray-400">Powered by Groq Llama AI · Personalized to your profile</p>
           </div>
           <span className="ml-auto badge-premium">✨ Premium</span>
+          {messages.length > 1 && (
+            <button onClick={clearChat}
+              className="text-xs text-sage-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
+              🗑 Clear chat
+            </button>
+          )}
         </div>
       </div>
 
