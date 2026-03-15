@@ -36,7 +36,6 @@ export default function Register() {
     goal: 'maintain', activityLevel: 'moderate',
     // Step 3 — Preferences
     allergies: '', dietaryRestrictions: '', cuisinePreferences: '',
-    budget: '', budgetAmount: '', budgetPeriod: 'week', currency: 'PHP',
   });
 
   const set = (key, val) => {
@@ -90,10 +89,6 @@ export default function Register() {
         allergies: form.allergies ? form.allergies.split(',').map((s) => s.trim()).filter(Boolean) : [],
         dietaryRestrictions: form.dietaryRestrictions ? form.dietaryRestrictions.split(',').map((s) => s.trim()).filter(Boolean) : [],
         cuisinePreferences: form.cuisinePreferences ? form.cuisinePreferences.split(',').map((s) => s.trim()).filter(Boolean) : [],
-        budget: form.budget || 'moderate',
-        budgetAmount: form.budgetAmount ? parseFloat(form.budgetAmount) : undefined,
-        budgetPeriod: form.budgetPeriod,
-        currency: form.currency,
       };
 
       await api.put('/profile', { profile });
@@ -265,33 +260,6 @@ export default function Register() {
                 <p className="text-sage-500 dark:text-gray-400 text-sm mt-1">Help us personalize your meal plans (all optional)</p>
               </div>
 
-              {/* Budget section */}
-              <div className="p-4 bg-sage-50 dark:bg-gray-800 rounded-xl space-y-3">
-                <p className="text-sm font-semibold text-sage-700 dark:text-sage-300">💰 Food Budget</p>
-                <div className="flex gap-2">
-                  {['PHP', 'USD'].map((c) => (
-                    <button key={c} type="button" onClick={() => set('currency', c)}
-                      className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${form.currency === c ? 'bg-sage-600 text-white' : 'bg-white dark:bg-gray-700 border border-sage-200 dark:border-gray-600 text-sage-600 dark:text-gray-300'}`}>
-                      {c === 'PHP' ? '₱ PHP' : '$ USD'}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <label className="label text-xs">Amount ({form.currency === 'PHP' ? '₱' : '$'})</label>
-                    <input type="number" value={form.budgetAmount} onChange={(e) => set('budgetAmount', e.target.value)}
-                      className="input-field" placeholder={form.currency === 'PHP' ? 'e.g. 500' : 'e.g. 50'} />
-                  </div>
-                  <div className="flex-1">
-                    <label className="label text-xs">Per</label>
-                    <select value={form.budgetPeriod} onChange={(e) => set('budgetPeriod', e.target.value)} className="input-field">
-                      <option value="day">Day</option>
-                      <option value="week">Week</option>
-                      <option value="month">Month</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
 
               <div>
                 <label className="label">Allergies <span className="text-sage-400 font-normal">(comma-separated)</span></label>
