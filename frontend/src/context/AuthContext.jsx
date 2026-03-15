@@ -42,6 +42,16 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Clear saved chat history for this user
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const uid = currentUser?._id || currentUser?.id;
+      if (uid) localStorage.removeItem(`healthy_chat_${uid}`);
+      // fallback: clear any healthy_chat_ keys
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('healthy_chat_'))
+        .forEach(k => localStorage.removeItem(k));
+    } catch {}
     localStorage.removeItem('token');
     setUser(null);
   };
