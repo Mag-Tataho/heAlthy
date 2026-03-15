@@ -37,7 +37,7 @@ export default function Login() {
           <p className="text-sage-200 text-lg leading-relaxed">AI-powered personalized diet plans tailored to your goals, preferences, and lifestyle.</p>
           <div className="mt-8 grid grid-cols-3 gap-3 text-sm font-medium">
             {['🥗 AI Plans', '📊 Progress', '💬 AI Coach'].map((item) => (
-              <div key={item} className="bg-white dark:bg-gray-800/10 rounded-xl p-3">{item}</div>
+              <div key={item} className="bg-white/20 dark:bg-gray-800/10 rounded-xl p-3">{item}</div>
             ))}
           </div>
         </div>
