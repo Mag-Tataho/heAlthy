@@ -28,6 +28,11 @@ const userSchema = new mongoose.Schema({
     region:               { type: String },
     fitnessActivities:    [{ type: String }],
   },
+  privacy: {
+    showProgress:  { type: Boolean, default: true },
+    showProfile:   { type: Boolean, default: true },
+    showGoal:      { type: Boolean, default: true },
+  },
   reminders: {
     waterReminder:    { type: Boolean, default: false },
     mealReminders:    { type: Boolean, default: false },
