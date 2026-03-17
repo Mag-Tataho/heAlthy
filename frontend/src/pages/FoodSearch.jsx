@@ -6,7 +6,11 @@ import api from '../utils/api';
 // You can replace these with local files: import gif1 from '../assets/search1.gif'
 // or use any GIF URL you prefer
 const SEARCH_GIFS = [
-  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaTE5N3VhbGU2MnVrOXNzNnVmOTF1OW8xNXNqNmRlNDdoYXlkOXg5bCZlcD12MV9zdGlja2Vyc19zZWFyY2gmY3Q9cw/YoKaNSoTHog8Y3550r/giphy.gif',       // cooking pan
+  'https://media.giphy.com/media/lrr9rHuoJOE0w/giphy.gif',       // cooking pan
+  'https://media.giphy.com/media/zcCGBRQshGdt6/giphy.gif',       // eating burger
+  'https://media.giphy.com/media/TgL7lPGbdkxHy/giphy.gif',       // salad spinning
+  'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',   // chef cooking
+  'https://media.giphy.com/media/3oEjHWPTo7c0ajPwty/giphy.gif',  // searching magnifier
 ];
 
 // Pick a random GIF each time component renders

@@ -123,7 +123,7 @@ export default function Landing() {
             {/* Glow effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-sage-400/20 to-amber-400/20 blur-3xl rounded-3xl" />
             {/* Dashboard preview card */}
-            <div className="relative bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border border-sage-100 dark:border-gray-800 overflow-hidden">
+            <div className="relative bg-sage-50 dark:bg-gray-900 rounded-3xl shadow-2xl border border-sage-100 dark:border-gray-800 overflow-hidden">
               {/* Fake browser bar */}
               <div className="bg-sage-50 dark:bg-gray-800 px-4 py-3 flex items-center gap-2 border-b border-sage-100 dark:border-gray-700">
                 <div className="flex gap-1.5">
@@ -153,7 +153,7 @@ export default function Landing() {
               </div>
               <div className="px-6 pb-6 grid grid-cols-3 gap-3">
                 {['🥗 Meal Plans', '📈 Progress', '💬 AI Chat'].map((item) => (
-                  <div key={item} className="bg-gradient-to-br from-sage-500 to-sage-600 text-white rounded-xl p-3 text-center text-sm font-medium">
+                  <div key={item} className="bg-gradient-to-br from-sage-600 to-sage-700 text-white rounded-xl p-3 text-center text-sm font-medium shadow-sm">
                     {item}
                   </div>
                 ))}

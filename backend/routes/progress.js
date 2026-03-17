@@ -42,4 +42,40 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
+
+// GET /api/progress/friend/:userId — view a friend's progress (if they allow it)
+router.get('/friend/:userId', auth, async (req, res) => {
+  try {
+    const User = require('../models/User');
+    const friend = await User.findById(req.params.userId);
+    if (!friend) return res.status(404).json({ error: 'User not found' });
+
+    // Check they are friends
+    const isFriend = friend.friends.some(id => id.toString() === req.user._id.toString());
+    if (!isFriend) return res.status(403).json({ error: 'Not friends with this user' });
+
+    // Check privacy setting
+    if (friend.privacy && friend.privacy.showProgress === false) {
+      return res.status(403).json({ error: 'This user has set their progress to private' });
+    }
+
+    const { limit = 30 } = req.query;
+    const entries = await Progress.find({ user: req.params.userId })
+      .sort({ date: -1 })
+      .limit(parseInt(limit));
+
+    res.json({
+      entries,
+      user: {
+        name: friend.name,
+        isPremium: friend.isPremium,
+        showGoal: friend.privacy?.showGoal !== false,
+        goal: friend.privacy?.showGoal !== false ? friend.profile?.goal : null,
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch friend progress' });
+  }
+});
+
 module.exports = router;

@@ -34,11 +34,28 @@ export default function Profile() {
     cuisinePreferences:  p.cuisinePreferences?.join(', ') || '',
   });
 
+  const [privacy, setPrivacy] = useState(user?.privacy || {
+    showProgress: true,
+    showProfile:  true,
+    showGoal:     true,
+  });
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
   const [saving,  setSaving]  = useState(false);
   const [success, setSuccess] = useState(false);
   const [error,   setError]   = useState('');
 
   const set = (k, v) => { setProfile(prev => ({ ...prev, [k]: v })); setSuccess(false); };
+
+  const handlePrivacyChange = async (key) => {
+    const updated = { ...privacy, [key]: !privacy[key] };
+    setPrivacy(updated);
+    setSavingPrivacy(true);
+    try {
+      const { data } = await api.put('/profile/privacy', { privacy: updated });
+      updateUser(data.user);
+    } catch { setPrivacy(privacy); }
+    finally { setSavingPrivacy(false); }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -164,6 +181,29 @@ export default function Profile() {
                 className="input-field" placeholder="e.g. Filipino, Asian, Mediterranean" />
             </div>
           </div>
+        </div>
+
+        {/* Privacy Settings */}
+        <div className="card dark:bg-gray-900 dark:border-gray-800 animate-fadeIn">
+          <h2 className="font-display text-lg font-semibold text-sage-800 dark:text-white mb-1">🔒 Privacy Settings</h2>
+          <p className="text-xs text-sage-400 dark:text-gray-500 mb-4">Control what your friends can see on your profile</p>
+          {[
+            { key: 'showProgress', label: '📊 Show Progress to Friends', desc: 'Friends can see your weight, calories and workout logs' },
+            { key: 'showProfile',  label: '👤 Show Profile Details',     desc: 'Friends can see your body info and goals' },
+            { key: 'showGoal',     label: '🎯 Show Health Goal',         desc: 'Friends can see your health goal (e.g. Lose Weight)' },
+          ].map(({ key, label, desc }) => (
+            <div key={key} className="flex items-center justify-between py-3 border-b border-sage-50 dark:border-gray-800 last:border-0">
+              <div>
+                <p className="text-sm font-medium text-sage-800 dark:text-gray-200">{label}</p>
+                <p className="text-xs text-sage-500 dark:text-gray-400 mt-0.5">{desc}</p>
+              </div>
+              <button type="button" onClick={() => handlePrivacyChange(key)}
+                className={`w-11 h-6 rounded-full transition-all duration-200 flex items-center flex-shrink-0 ${privacy[key] ? 'bg-sage-600 justify-end' : 'bg-sage-200 dark:bg-gray-700 justify-start'}`}>
+                <span className="w-5 h-5 rounded-full bg-white shadow-sm mx-0.5 block" />
+              </button>
+            </div>
+          ))}
+          {savingPrivacy && <p className="text-xs text-sage-400 mt-2 text-center">Saving privacy settings...</p>}
         </div>
 
         <button type="submit" disabled={saving} className="btn-primary w-full flex items-center justify-center gap-2 py-3 text-base">

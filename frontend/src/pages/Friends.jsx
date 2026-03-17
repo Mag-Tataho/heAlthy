@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
+import { formatGoal } from '../utils/nutrition';
 
 const Avatar = ({ name, size = 'md', premium }) => {
   const s = size === 'sm' ? 'w-8 h-8 text-xs' : size === 'lg' ? 'w-14 h-14 text-xl' : 'w-10 h-10 text-sm';
@@ -10,6 +11,128 @@ const Avatar = ({ name, size = 'md', premium }) => {
     </div>
   );
 };
+
+// Friend Profile Modal
+function FriendProfileModal({ friendId, onClose }) {
+  const [data, setData]       = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState('');
+
+  useEffect(() => {
+    api.get(`/profile/friend/${friendId}`)
+      .then(({ data }) => setData(data))
+      .catch(err => setError(err.response?.data?.error || 'Could not load profile'))
+      .finally(() => setLoading(false));
+  }, [friendId]);
+
+  const friend   = data?.friend;
+  const progress = data?.progress || [];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl animate-fadeIn"
+        onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="sticky top-0 bg-white dark:bg-gray-900 px-5 py-4 border-b border-sage-100 dark:border-gray-800 flex items-center justify-between rounded-t-2xl">
+          <h3 className="font-display text-lg font-semibold text-sage-900 dark:text-white">Friend Profile</h3>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-full bg-sage-100 dark:bg-gray-800 flex items-center justify-center text-sage-600 dark:text-gray-400 hover:bg-sage-200 transition-colors">✕</button>
+        </div>
+
+        <div className="p-5 space-y-5">
+          {loading && (
+            <div className="text-center py-8 text-sage-400 dark:text-gray-500">
+              <div className="loading-pulse text-3xl mb-2">👤</div>
+              Loading profile...
+            </div>
+          )}
+
+          {error && <p className="text-center text-red-500 py-4">{error}</p>}
+
+          {!loading && friend && (
+            <>
+              {/* Friend info */}
+              <div className="flex items-center gap-4">
+                <Avatar name={friend.name} size="lg" premium={friend.isPremium} />
+                <div>
+                  <h4 className="font-display text-xl font-semibold text-sage-900 dark:text-white">{friend.name}</h4>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={friend.isPremium ? 'badge-premium' : 'badge-free'}>
+                      {friend.isPremium ? '✨ Premium' : '🌱 Free'}
+                    </span>
+                    {friend.friendCount > 0 && (
+                      <span className="text-xs text-sage-400 dark:text-gray-500">{friend.friendCount} friends</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Goal */}
+              {friend.goal && (
+                <div className="bg-sage-50 dark:bg-gray-800 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-sage-400 dark:text-gray-500 uppercase tracking-wide mb-1">Health Goal</p>
+                  <p className="text-sm font-medium text-sage-800 dark:text-gray-200">
+                    {formatGoal(friend.goal)}
+                  </p>
+                </div>
+              )}
+
+              {/* Profile details */}
+              {friend.profile && (
+                <div className="bg-sage-50 dark:bg-gray-800 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-sage-400 dark:text-gray-500 uppercase tracking-wide mb-3">Body Info</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: 'Age',    value: friend.profile.age ? `${friend.profile.age} yrs` : null },
+                      { label: 'Height', value: friend.profile.height ? `${friend.profile.height} cm` : null },
+                      { label: 'Weight', value: friend.profile.weight ? `${friend.profile.weight} kg` : null },
+                      { label: 'Target', value: friend.profile.targetWeight ? `${friend.profile.targetWeight} kg` : null },
+                    ].filter(i => i.value).map(({ label, value }) => (
+                      <div key={label} className="text-center bg-white dark:bg-gray-700 rounded-lg p-2">
+                        <p className="text-sm font-semibold text-sage-800 dark:text-white">{value}</p>
+                        <p className="text-xs text-sage-400 dark:text-gray-500">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Progress history */}
+              {progress.length > 0 ? (
+                <div>
+                  <p className="text-xs font-semibold text-sage-400 dark:text-gray-500 uppercase tracking-wide mb-3">Progress History</p>
+                  <div className="space-y-2">
+                    {progress.slice(0, 10).map((entry, i) => (
+                      <div key={i} className="flex items-center justify-between py-2 px-3 bg-sage-50 dark:bg-gray-800 rounded-xl">
+                        <span className="text-xs text-sage-500 dark:text-gray-400">
+                          {new Date(entry.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                        </span>
+                        <div className="flex gap-3 text-xs">
+                          {entry.weight   && <span className="text-sage-700 dark:text-gray-300 font-medium">{entry.weight} kg</span>}
+                          {entry.calories && <span className="text-amber-600 dark:text-amber-400 font-medium">{entry.calories} cal</span>}
+                          {entry.water    && <span className="text-blue-500 font-medium">{entry.water} 💧</span>}
+                          {entry.workout?.type && <span className="text-sage-500 dark:text-gray-400">🏃 {entry.workout.type}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {progress.length > 10 && (
+                    <p className="text-xs text-sage-400 dark:text-gray-500 text-center mt-2">Showing 10 of {progress.length} entries</p>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-sage-400 dark:text-gray-500 text-sm">
+                  🔒 Progress is private or not yet logged
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Friends() {
   const [tab, setTab]             = useState('friends');
@@ -24,6 +147,7 @@ export default function Friends() {
   const [loading, setLoading]     = useState(true);
   const [msg, setMsg]             = useState('');
   const [error, setError]         = useState('');
+  const [viewFriendId, setViewFriendId] = useState(null);
 
   const flash = (text, isErr = false) => {
     if (isErr) setError(text); else setMsg(text);
@@ -150,6 +274,10 @@ export default function Friends() {
                   <p className="text-xs text-sage-400 dark:text-gray-500">{f.email}</p>
                 </div>
                 {f.isPremium && <span className="badge-premium">✨ Premium</span>}
+                <button onClick={() => setViewFriendId(f._id)}
+                  className="text-xs text-sage-600 dark:text-sage-400 hover:text-sage-800 dark:hover:text-white px-2 py-1 rounded-lg hover:bg-sage-50 dark:hover:bg-gray-800 transition-colors">
+                  View Profile
+                </button>
                 <button onClick={() => handleRemove(f._id)}
                   className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                   Remove
@@ -163,7 +291,6 @@ export default function Friends() {
       {/* Incoming requests */}
       {tab === 'requests' && (
         <div className="space-y-4">
-          {/* Incoming */}
           <div>
             <h2 className="text-sm font-semibold text-sage-500 dark:text-gray-400 uppercase tracking-wide mb-3">Incoming</h2>
             {requests.length === 0 ? (
@@ -186,7 +313,6 @@ export default function Friends() {
               </div>
             )}
           </div>
-          {/* Sent */}
           <div>
             <h2 className="text-sm font-semibold text-sage-500 dark:text-gray-400 uppercase tracking-wide mb-3">Sent</h2>
             {sent.length === 0 ? (
@@ -212,7 +338,6 @@ export default function Friends() {
       {/* Add friend */}
       {tab === 'add' && (
         <div className="space-y-4">
-          {/* Add by email */}
           <div className="card animate-fadeIn">
             <h2 className="font-display text-lg font-semibold text-sage-800 dark:text-white mb-3">Add by Email</h2>
             <p className="text-sm text-sage-500 dark:text-gray-400 mb-3">Know their email? Send a direct request.</p>
@@ -225,8 +350,6 @@ export default function Friends() {
               </button>
             </div>
           </div>
-
-          {/* Search by name */}
           <div className="card animate-fadeIn">
             <h2 className="font-display text-lg font-semibold text-sage-800 dark:text-white mb-3">Search Users</h2>
             <form onSubmit={handleSearch} className="flex gap-2 mb-4">
@@ -258,6 +381,11 @@ export default function Friends() {
             )}
           </div>
         </div>
+      )}
+
+      {/* Friend Profile Modal */}
+      {viewFriendId && (
+        <FriendProfileModal friendId={viewFriendId} onClose={() => setViewFriendId(null)} />
       )}
     </div>
   );
