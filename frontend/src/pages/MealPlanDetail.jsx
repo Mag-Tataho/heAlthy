@@ -1,43 +1,79 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
 const MacroBadge = ({ protein, carbs, fat, calories }) => (
   <div className="flex flex-wrap gap-2 text-xs">
-    {calories && <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">{calories} kcal</span>}
-    {protein && <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">P: {protein}g</span>}
-    {carbs && <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">C: {carbs}g</span>}
-    {fat && <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">F: {fat}g</span>}
+    {calories && <span className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-full font-medium">{calories} Calories</span>}
+    {protein && <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">Protein: {protein}g</span>}
+    {carbs && <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full font-medium">Carbs: {carbs}g</span>}
+    {fat && <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full font-medium">Fat: {fat}g</span>}
   </div>
 );
 
 const MealCard = ({ meal }) => {
   const [open, setOpen] = useState(false);
+  const [steps, setSteps] = useState(meal.cookingSteps || null);
+  const [loadingSteps, setLoadingSteps] = useState(false);
+  const [stepsError, setStepsError] = useState('');
+
+  const loadCookingSteps = async () => {
+    if (steps) return; // already loaded
+    setLoadingSteps(true);
+    setStepsError('');
+    try {
+      const { data } = await api.post('/ai/chat', {
+        messages: [{
+          role: 'user',
+          content: `Give me a simple step-by-step cooking procedure for "${meal.name}"${meal.ingredients?.length ? ` using these ingredients: ${meal.ingredients.join(', ')}` : ''}. Keep it practical and easy to follow. Format as numbered steps, max 6 steps. No intro text, just the steps.`
+        }]
+      });
+      setSteps(data.reply);
+    } catch {
+      setStepsError('Could not load cooking steps. Check your connection.');
+    } finally {
+      setLoadingSteps(false);
+    }
+  };
+
+  const handleOpen = () => {
+    const newOpen = !open;
+    setOpen(newOpen);
+    if (newOpen) loadCookingSteps();
+  };
+
   return (
-    <div className="border border-sage-100 rounded-xl overflow-hidden">
+    <div className="border border-sage-100 dark:border-gray-700 rounded-xl overflow-hidden">
       <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between p-4 bg-white hover:bg-sage-50 dark:bg-gray-800 transition-colors text-left"
+        onClick={handleOpen}
+        className="w-full flex items-center justify-between p-4 bg-white hover:bg-sage-50 dark:bg-gray-800 dark:hover:bg-gray-750 transition-colors text-left"
       >
         <div>
-          <span className="text-xs font-semibold text-sage-400 uppercase tracking-wide">{meal.type}</span>
+          <span className="text-xs font-semibold text-sage-400 dark:text-gray-500 uppercase tracking-wide">{meal.type}</span>
           <p className="font-medium text-sage-900 dark:text-white mt-0.5">{meal.name}</p>
         </div>
         <div className="flex items-center gap-3">
           {meal.calories && (
-            <span className="text-sm font-medium text-sage-600 dark:text-gray-300">{meal.calories} kcal</span>
+            <span className="text-sm font-medium text-sage-600 dark:text-gray-300">{meal.calories} cal</span>
           )}
           <span className="text-sage-400">{open ? '▲' : '▼'}</span>
         </div>
       </button>
+
       {open && (
-        <div className="px-4 pb-4 bg-white dark:bg-gray-800 border-t border-sage-50 animate-fadeIn">
+        <div className="px-4 pb-4 bg-white dark:bg-gray-800 border-t border-sage-50 dark:border-gray-700 animate-fadeIn space-y-4">
+          {/* Description */}
           {meal.description && (
-            <p className="text-sm text-sage-600 dark:text-gray-400 mt-3 mb-3">{meal.description}</p>
+            <p className="text-sm text-sage-600 dark:text-gray-400 mt-3">{meal.description}</p>
           )}
-          <MacroBadge protein={meal.protein} carbs={meal.carbs} fat={meal.fat} />
+
+          {/* Macros */}
+          <MacroBadge protein={meal.protein} carbs={meal.carbs} fat={meal.fat} calories={meal.calories} />
+
+          {/* Ingredients */}
           {meal.ingredients && meal.ingredients.length > 0 && (
-            <div className="mt-3">
+            <div>
               <p className="text-xs font-semibold text-sage-500 dark:text-gray-500 uppercase tracking-wide mb-2">Ingredients</p>
               <ul className="space-y-1">
                 {meal.ingredients.map((ing, i) => (
@@ -49,6 +85,21 @@ const MealCard = ({ meal }) => {
               </ul>
             </div>
           )}
+
+          {/* Cooking Procedure */}
+          <div className="bg-sage-50 dark:bg-gray-700/50 rounded-xl p-4">
+            <p className="text-xs font-semibold text-sage-500 dark:text-gray-400 uppercase tracking-wide mb-3">👨‍🍳 How to Cook</p>
+            {loadingSteps ? (
+              <div className="flex items-center gap-2 text-sm text-sage-400 dark:text-gray-500">
+                <div className="w-4 h-4 border-2 border-sage-400 border-t-transparent rounded-full animate-spin" />
+                Loading cooking steps...
+              </div>
+            ) : stepsError ? (
+              <p className="text-sm text-red-500">{stepsError}</p>
+            ) : steps ? (
+              <div className="text-sm text-sage-700 dark:text-gray-300 whitespace-pre-line leading-relaxed">{steps}</div>
+            ) : null}
+          </div>
         </div>
       )}
     </div>
@@ -58,19 +109,46 @@ const MealCard = ({ meal }) => {
 
 export default function MealPlanDetail() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [planDoc, setPlanDoc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeDay, setActiveDay] = useState(0);
   const [showGrocery, setShowGrocery] = useState(false);
+  const [customMeals, setCustomMeals] = useState([]);
+  const [safeCustomMeals, setSafeCustomMeals] = useState([]);
 
   useEffect(() => {
-    api
-      .get(`/ai/meal-plans/${id}`)
+    api.get(`/ai/meal-plans/${id}`)
       .then(({ data }) => setPlanDoc(data.plan))
       .catch(() => setError('Meal plan not found'))
       .finally(() => setLoading(false));
-  }, [id]);
+
+    // Load user's custom meals for recommendations
+    api.get('/custom-meals')
+      .then(({ data }) => {
+        const meals = data.meals || [];
+        const p = user?.profile || {};
+        const allergies = (p.allergies || []).map(a => a.toLowerCase());
+        const restrictions = (p.dietaryRestrictions || []).map(r => r.toLowerCase());
+
+        // Filter safe meals — not containing any allergen in name or ingredients
+        const safe = meals.filter(meal => {
+          const text = [meal.name, ...(meal.ingredients || [])].join(' ').toLowerCase();
+          const hasAllergen = allergies.some(a => text.includes(a));
+          const violatesRestriction = restrictions.some(r => {
+            if (r === 'vegetarian' && (text.includes('chicken') || text.includes('beef') || text.includes('pork') || text.includes('fish'))) return true;
+            if (r === 'vegan' && (text.includes('milk') || text.includes('egg') || text.includes('cheese') || text.includes('butter'))) return true;
+            if (r === 'halal' && (text.includes('pork') || text.includes('bacon') || text.includes('ham'))) return true;
+            return false;
+          });
+          return !hasAllergen && !violatesRestriction;
+        });
+        setCustomMeals(meals);
+        setSafeCustomMeals(safe);
+      })
+      .catch(() => {});
+  }, [id]); // eslint-disable-line
 
   if (loading) return <div className="text-center py-16 text-sage-400">Loading meal plan...</div>;
   if (error)
@@ -83,14 +161,13 @@ export default function MealPlanDetail() {
 
   const plan = planDoc?.plan || {};
   const isMultiDay = plan.days && Array.isArray(plan.days);
-  const meals = isMultiDay ? plan.days[activeDay]?.meals : plan.meals;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-fadeIn">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <Link to="/meal-plans" className="text-sm text-sage-500 hover:text-sage-700 dark:text-gray-200 mb-2 block">
+          <Link to="/meal-plans" className="text-sm text-sage-500 hover:text-sage-700 dark:text-gray-400 mb-2 block">
             ← Back to Plans
           </Link>
           <h1 className="section-title">{plan.title || planDoc?.title}</h1>
@@ -100,14 +177,37 @@ export default function MealPlanDetail() {
                 month: 'long', day: 'numeric', year: 'numeric',
               })}
             </span>
-            {plan.totalCalories && <span>· ~{plan.totalCalories} kcal/day</span>}
-            {plan.totalCaloriesPerDay && <span>· ~{plan.totalCaloriesPerDay} kcal/day</span>}
+            {plan.totalCalories && <span>· ~{plan.totalCalories} cal/day</span>}
+            {plan.totalCaloriesPerDay && <span>· ~{plan.totalCaloriesPerDay} cal/day</span>}
             <span className={planDoc?.isPremium ? 'badge-premium' : 'badge-free'}>
               {planDoc?.isPremium ? '✨ Premium' : '🌱 Free'}
             </span>
           </div>
         </div>
       </div>
+
+      {/* Safe Custom Meals Recommendation */}
+      {safeCustomMeals.length > 0 && (
+        <div className="card bg-sage-50 dark:bg-gray-800 border-sage-200 dark:border-gray-700 animate-fadeIn">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg">🍽️</span>
+            <h3 className="font-display font-semibold text-sage-800 dark:text-white text-sm">Your Custom Meals — Safe for You</h3>
+            <span className="ml-auto text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full">✓ Allergen checked</span>
+          </div>
+          <p className="text-xs text-sage-500 dark:text-gray-400 mb-3">These custom meals match your dietary needs and can replace meals in this plan:</p>
+          <div className="flex flex-wrap gap-2">
+            {safeCustomMeals.slice(0, 6).map((meal) => (
+              <div key={meal._id} className="flex items-center gap-1.5 bg-white dark:bg-gray-700 border border-sage-200 dark:border-gray-600 rounded-lg px-3 py-1.5">
+                <span className="text-xs font-medium text-sage-800 dark:text-gray-200">{meal.name}</span>
+                {meal.calories && <span className="text-xs text-sage-400 dark:text-gray-500">· {meal.calories} cal</span>}
+              </div>
+            ))}
+            {safeCustomMeals.length > 6 && (
+              <span className="text-xs text-sage-400 dark:text-gray-500 self-center">+{safeCustomMeals.length - 6} more</span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Day tabs for multi-day plans */}
       {isMultiDay && plan.days && (

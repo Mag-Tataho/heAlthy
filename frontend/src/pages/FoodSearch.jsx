@@ -1,6 +1,17 @@
 import React, { useState, useCallback } from 'react';
 import api from '../utils/api';
 
+
+// ── SEARCHING GIFS — swap these URLs with any GIFs you like! ──
+// You can replace these with local files: import gif1 from '../assets/search1.gif'
+// or use any GIF URL you prefer
+const SEARCH_GIFS = [
+  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaTE5N3VhbGU2MnVrOXNzNnVmOTF1OW8xNXNqNmRlNDdoYXlkOXg5bCZlcD12MV9zdGlja2Vyc19zZWFyY2gmY3Q9cw/YoKaNSoTHog8Y3550r/giphy.gif',       // cooking pan
+];
+
+// Pick a random GIF each time component renders
+const getRandomGif = () => SEARCH_GIFS[Math.floor(Math.random() * SEARCH_GIFS.length)];
+
 const SOURCE_BADGE = {
   'Open Food Facts': { label: '📦 Real Data', color: 'bg-blue-100 text-blue-700' },
   'Open Food Facts + AI': { label: '📦 + 🤖 AI', color: 'bg-purple-100 text-purple-700' },
@@ -33,9 +44,9 @@ const MacroBar = ({ protein, carbs, fat, calories }) => {
         <div className="bg-green-400 rounded-full" style={{ width: `${pF}%` }} title={`Fat ${pF}%`} />
       </div>
       <div className="flex gap-3 mt-1 text-xs text-sage-400">
-        <span className="text-blue-500">P {pP}%</span>
-        <span className="text-amber-500">C {pC}%</span>
-        <span className="text-green-500">F {pF}%</span>
+        <span className="text-blue-500">Protein {pP}%</span>
+        <span className="text-amber-500">Carbs {pC}%</span>
+        <span className="text-green-500">Fat {pF}%</span>
       </div>
     </div>
   );
@@ -144,7 +155,7 @@ const FoodDetail = ({ food, onClose }) => {
           {/* Main macros */}
           <div className="grid grid-cols-4 gap-2 text-center">
             {[
-              { label: 'Calories', value: food.calories, unit: 'kcal', color: 'text-orange-600' },
+              { label: 'Calories', value: food.calories, unit: 'Calories', color: 'text-orange-600' },
               { label: 'Protein', value: food.protein, unit: 'g', color: 'text-blue-600' },
               { label: 'Carbs', value: food.carbs, unit: 'g', color: 'text-amber-600' },
               { label: 'Fat', value: food.fat, unit: 'g', color: 'text-green-600' },
@@ -354,10 +365,15 @@ export default function FoodSearch() {
         </div>
       )}
 
-      {/* Loading state */}
+      {/* Loading state — shows a random GIF while searching */}
       {loading && (
-        <div className="card text-center py-10 animate-fadeIn">
-          <div className="text-4xl mb-3 loading-pulse">🔍</div>
+        <div className="card text-center py-8 animate-fadeIn">
+          <img
+            src={getRandomGif()}
+            alt="Searching..."
+            className="w-40 h-40 object-cover rounded-2xl mx-auto mb-4 shadow-md"
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
           <p className="font-medium text-sage-800 dark:text-gray-200">Searching foods...</p>
           <p className="text-sm text-sage-400 mt-1">Checking real database + AI</p>
         </div>

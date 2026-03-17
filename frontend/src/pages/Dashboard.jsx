@@ -94,7 +94,7 @@ export default function Dashboard() {
       const { data } = await api.post('/ai/chat', {
         messages: [{
           role: 'user',
-          content: `Give me one specific, actionable nutrition tip for today. My goal is ${p.goal?.replace(/_/g, ' ') || 'improve health'}${p.region ? `, I am from ${p.region}` : ''}${p.dietaryRestrictions?.length ? `, I am ${p.dietaryRestrictions.join(', ')}` : ''}. Keep it under 2 sentences, make it practical and motivating. Start directly with the tip, no intro.`
+          content: `Give me one specific, actionable nutrition tip for today. My goal is ${p.goal?.replace(/_/g, ' ') || 'improve health'}${p.region ? `, I am from ${p.region}` : ''}${p.dietaryRestrictions?.length ? `, my dietary restrictions are: ${p.dietaryRestrictions.join(', ')}` : ''}${p.allergies?.length ? `, I am ALLERGIC to: ${p.allergies.join(', ')} — NEVER suggest these foods` : ''}. Keep it under 2 sentences, make it practical and motivating. IMPORTANT: Do not suggest any food the user is allergic to or that violates their dietary restrictions. Start directly with the tip, no intro.`
         }]
       });
       setAiTip(data.reply);

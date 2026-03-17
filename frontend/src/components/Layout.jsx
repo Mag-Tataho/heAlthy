@@ -44,7 +44,10 @@ export default function Layout() {
       {/* Logo */}
       <div className="px-6 py-6 border-b border-sage-100">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">🌿</span>
+          {/* LOGO PLACEHOLDER — replace the box below with your <img src="/logo.png" /> */}
+          <div className="w-8 h-8 rounded-lg bg-sage-200 dark:bg-gray-700 border-2 border-dashed border-sage-400 dark:border-gray-500 flex items-center justify-center text-xs text-sage-400 dark:text-gray-500 font-bold">
+            Logo
+          </div>
           <span className="font-display text-xl font-semibold text-sage-900 dark:text-white">heAlthy</span>
         </div>
         <p className="text-xs text-sage-500 dark:text-gray-500 mt-1 font-body">Smart diet planning</p>
@@ -170,7 +173,7 @@ export default function Layout() {
 
           {/* Center: logo */}
           <div className="flex items-center gap-1.5">
-            <span className="text-lg">🌿</span>
+            <div className="w-7 h-7 rounded-md bg-sage-200 dark:bg-gray-700 border-2 border-dashed border-sage-400 dark:border-gray-500 flex items-center justify-center text-xs text-sage-400 dark:text-gray-500 font-bold">L</div>
             <span className="font-display font-semibold text-sage-900 dark:text-white text-lg">heAlthy</span>
           </div>
 
