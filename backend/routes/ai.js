@@ -200,6 +200,31 @@ Return ONLY valid JSON, no markdown, no extra text:
 });
 
 // ─────────────────────────────────────────────
+
+// POST /api/ai/cooking-steps  (Free — generates cooking steps for any meal)
+router.post('/cooking-steps', auth, async (req, res) => {
+  try {
+    const { mealName, ingredients = [] } = req.body;
+    if (!mealName) return res.status(400).json({ error: 'Meal name is required' });
+
+    const prompt = `Give me a simple step-by-step cooking procedure for "${mealName}"${
+      ingredients.length ? ` using these ingredients: ${ingredients.join(', ')}` : ''
+    }. Keep it practical and easy to follow. Format as numbered steps, max 6 steps. No intro text, just the steps.`;
+
+    const completion = await getGroq().chat.completions.create({
+      model: GROQ_FAST,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.4,
+      max_tokens: 400,
+    });
+
+    res.json({ steps: completion.choices[0].message.content });
+  } catch (err) {
+    console.error('Cooking steps error:', err.message);
+    res.status(500).json({ error: 'Could not generate cooking steps' });
+  }
+});
+
 // POST /api/ai/chat  (Premium)
 // Full multi-turn conversation with Groq
 // ─────────────────────────────────────────────
