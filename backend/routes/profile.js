@@ -64,7 +64,11 @@ router.get('/friend/:id', auth, async (req, res) => {
     if (!friend) return res.status(404).json({ error: 'User not found' });
 
     // Check if they are actually friends
-    const isFriend = viewer.friends.some(fId => fId.toString() === friend._id.toString());
+    // friends may be populated objects or raw ObjectIds — handle both
+    const isFriend = viewer.friends.some(f => {
+      const id = f._id ? f._id.toString() : f.toString();
+      return id === friend._id.toString();
+    });
     if (!isFriend) return res.status(403).json({ error: 'You are not friends with this user' });
 
     const privacy = friend.privacy || {};
