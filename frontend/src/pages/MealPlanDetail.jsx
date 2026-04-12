@@ -23,13 +23,11 @@ const MealCard = ({ meal }) => {
     setLoadingSteps(true);
     setStepsError('');
     try {
-      const { data } = await api.post('/ai/chat', {
-        messages: [{
-          role: 'user',
-          content: `Give me a simple step-by-step cooking procedure for "${meal.name}"${meal.ingredients?.length ? ` using these ingredients: ${meal.ingredients.join(', ')}` : ''}. Keep it practical and easy to follow. Format as numbered steps, max 6 steps. No intro text, just the steps.`
-        }]
+      const { data } = await api.post('/ai/cooking-steps', {
+        mealName: meal.name,
+        ingredients: meal.ingredients || [],
       });
-      setSteps(data.reply);
+      setSteps(data.steps);
     } catch {
       setStepsError('Could not load cooking steps. Check your connection.');
     } finally {
