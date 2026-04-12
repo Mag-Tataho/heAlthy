@@ -16,13 +16,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 globally
+// Handle 401 globally — token expired or invalid
 api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      const publicPaths = ['/login', '/register', '/'];
+      const isPublic = publicPaths.some(p => window.location.pathname === p);
+      if (!isPublic) {
+        // Only clear and redirect if NOT already on a public page
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(err);
   }
