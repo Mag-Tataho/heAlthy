@@ -17,9 +17,12 @@ const SEARCH_GIFS = [
 const getRandomGif = () => SEARCH_GIFS[Math.floor(Math.random() * SEARCH_GIFS.length)];
 
 const SOURCE_BADGE = {
-  'Open Food Facts': { label: '📦 Real Data', color: 'bg-blue-100 text-blue-700' },
-  'Open Food Facts + AI': { label: '📦 + 🤖 AI', color: 'bg-purple-100 text-purple-700' },
-  'AI Generated': { label: '🤖 AI Generated', color: 'bg-amber-100 text-amber-700' },
+  'USDA FoodData Central':    { label: '🏛️ USDA Verified',        color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+  'USDA + Open Food Facts':   { label: '🏛️ USDA + 📦 Branded',    color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+  'Open Food Facts':          { label: '📦 Branded Products',      color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+  'Open Food Facts + AI':     { label: '📦 + 🤖 AI',               color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+  'AI (USDA Reference)':      { label: '🤖 AI (USDA Reference)',   color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
+  'AI Generated':             { label: '🤖 AI Generated',          color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
 };
 
 const CATEGORY_COLORS = {
@@ -102,7 +105,14 @@ const FoodCard = ({ food, onSelect, isSelected }) => (
     </div>
 
     {/* Source badge */}
-    <div className="mt-2 flex justify-end">
+    <div className="mt-2 flex items-center justify-between">
+      {food.sourceUrl ? (
+        <a href={food.sourceUrl} target="_blank" rel="noopener noreferrer"
+          className="text-xs text-sage-400 dark:text-gray-500 hover:text-sage-600 dark:hover:text-gray-300 underline"
+          onClick={e => e.stopPropagation()}>
+          View source ↗
+        </a>
+      ) : <span />}
       <span className={`text-xs px-2 py-0.5 rounded-full ${SOURCE_BADGE[food.source]?.color || 'bg-sage-100 text-sage-500'}`}>
         {SOURCE_BADGE[food.source]?.label || food.source}
       </span>
