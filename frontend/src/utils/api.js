@@ -21,8 +21,9 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      const publicPaths = ['/login', '/register', '/'];
-      const isPublic = publicPaths.some(p => window.location.pathname === p);
+      const pathname = window.location.pathname;
+      const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/reset-password-success'];
+      const isPublic = publicPaths.includes(pathname) || pathname.startsWith('/reset-password/');
       if (!isPublic) {
         // Only clear and redirect if NOT already on a public page
         localStorage.removeItem('token');
