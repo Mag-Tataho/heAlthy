@@ -1,8 +1,8 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const Groq = require('groq-sdk');
-const MealPlan = require('../models/MealPlan');
 const { auth, premiumAuth } = require('../middleware/auth');
+const { listMealPlansByUser, getMealPlanById, createMealPlan, deleteMealPlanById } = require('../src/db/mealPlans');
 
 const router = express.Router();
 
@@ -249,8 +249,8 @@ Return ONLY valid JSON, no markdown, no extra text:
       forbiddenAllergies,
     });
 
-    const mealPlan = await MealPlan.create({
-      user: req.user._id,
+    const mealPlan = await createMealPlan({
+      userId: req.user._id,
       title: planData.title || '1-Day Meal Plan',
       type: 'basic',
       duration: '1day',
@@ -332,8 +332,8 @@ Return ONLY valid JSON, no markdown, no extra text:
       }));
     }
 
-    const mealPlan = await MealPlan.create({
-      user: req.user._id,
+    const mealPlan = await createMealPlan({
+      userId: req.user._id,
       title: planData.title || `Personalized ${titleText}`,
       type: 'personalized',
       duration,
@@ -501,9 +501,7 @@ Return ONLY valid JSON, no markdown:
 router.get('/meal-plans', auth, async (req, res) => {
   try {
     const { limit = 10 } = req.query;
-    const plans = await MealPlan.find({ user: req.user._id })
-      .sort({ createdAt: -1 })
-      .limit(parseInt(limit));
+    const plans = await listMealPlansByUser(req.user._id, { limit });
     res.json({ plans });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch meal plans' });
@@ -515,10 +513,7 @@ router.get('/meal-plans', auth, async (req, res) => {
 // ─────────────────────────────────────────────
 router.get('/meal-plans/:id', auth, async (req, res) => {
   try {
-    const plan = await MealPlan.findOne({
-      _id: req.params.id,
-      user: req.user._id,
-    });
+    const plan = await getMealPlanById(req.user._id, req.params.id);
     if (!plan) return res.status(404).json({ error: 'Meal plan not found' });
     res.json({ plan });
   } catch (err) {
@@ -533,7 +528,7 @@ module.exports = router;
 // ─────────────────────────────────────────────
 router.delete('/meal-plans/:id', auth, async (req, res) => {
   try {
-    const plan = await MealPlan.findOneAndDelete({ _id: req.params.id, user: req.user._id });
+    const plan = await deleteMealPlanById(req.user._id, req.params.id);
     if (!plan) return res.status(404).json({ error: 'Meal plan not found' });
     res.json({ message: 'Meal plan deleted' });
   } catch (err) {

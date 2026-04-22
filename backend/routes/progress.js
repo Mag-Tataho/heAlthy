@@ -1,14 +1,14 @@
 const express = require('express');
-const Progress = require('../models/Progress');
 const { auth } = require('../middleware/auth');
+const { createProgressEntry, listProgressEntries, deleteProgressEntry } = require('../src/db/progress');
+const { getUserById } = require('../src/db/users');
 
 const router = express.Router();
 
 // POST /api/progress
 router.post('/', auth, async (req, res) => {
   try {
-    const data = { ...req.body, user: req.user._id };
-    const progress = await Progress.create(data);
+    const progress = await createProgressEntry({ userId: req.user._id, ...req.body });
     res.status(201).json({ progress });
   } catch (err) {
     res.status(400).json({ error: err.message || 'Failed to log progress' });
@@ -19,9 +19,7 @@ router.post('/', auth, async (req, res) => {
 router.get('/', auth, async (req, res) => {
   try {
     const { limit = 30 } = req.query;
-    const entries = await Progress.find({ user: req.user._id })
-      .sort({ date: -1 })
-      .limit(parseInt(limit));
+    const entries = await listProgressEntries(req.user._id, { limit });
     res.json({ entries });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch progress data' });
@@ -31,10 +29,7 @@ router.get('/', auth, async (req, res) => {
 // DELETE /api/progress/:id
 router.delete('/:id', auth, async (req, res) => {
   try {
-    const entry = await Progress.findOneAndDelete({
-      _id: req.params.id,
-      user: req.user._id,
-    });
+    const entry = await deleteProgressEntry(req.user._id, req.params.id);
     if (!entry) return res.status(404).json({ error: 'Entry not found' });
     res.json({ message: 'Entry deleted' });
   } catch (err) {
@@ -46,8 +41,7 @@ router.delete('/:id', auth, async (req, res) => {
 // GET /api/progress/friend/:userId — view a friend's progress (if they allow it)
 router.get('/friend/:userId', auth, async (req, res) => {
   try {
-    const User = require('../models/User');
-    const friend = await User.findById(req.params.userId);
+    const friend = await getUserById(req.params.userId);
     if (!friend) return res.status(404).json({ error: 'User not found' });
 
     // Check they are friends
@@ -60,9 +54,7 @@ router.get('/friend/:userId', auth, async (req, res) => {
     }
 
     const { limit = 30 } = req.query;
-    const entries = await Progress.find({ user: req.params.userId })
-      .sort({ date: -1 })
-      .limit(parseInt(limit));
+    const entries = await listProgressEntries(req.params.userId, { limit });
 
     res.json({
       entries,

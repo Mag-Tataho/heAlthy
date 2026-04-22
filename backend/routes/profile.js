@@ -1,7 +1,7 @@
 const express = require('express');
-const User = require('../models/User');
-const Progress = require('../models/Progress');
 const { auth } = require('../middleware/auth');
+const { updateUserById, getUserById } = require('../src/db/users');
+const { listProgressEntries } = require('../src/db/progress');
 
 const router = express.Router();
 const MAX_AVATAR_DATA_URL_LENGTH = Number(process.env.MAX_AVATAR_DATA_URL_LENGTH || 2500000);
@@ -46,34 +46,30 @@ router.get('/', auth, async (req, res) => {
 router.put('/', auth, async (req, res) => {
   try {
     const { profile, avatarUrl, name } = req.body || {};
-    const updateOps = { $set: {} };
+    const updates = {};
 
     if (profile && typeof profile === 'object') {
-      updateOps.$set.profile = profile;
+      updates.profile = { ...req.user.profile, ...profile };
     }
 
     if (typeof name === 'string' && name.trim()) {
-      updateOps.$set.name = name.trim();
+      updates.name = name.trim();
     }
 
     if (Object.prototype.hasOwnProperty.call(req.body || {}, 'avatarUrl')) {
       const normalizedAvatar = normalizeAvatarDataUrl(avatarUrl);
       if (normalizedAvatar) {
-        updateOps.$set.avatarUrl = normalizedAvatar;
+        updates.avatarUrl = normalizedAvatar;
       } else {
-        updateOps.$unset = { avatarUrl: 1 };
+        updates.avatarUrl = '';
       }
     }
 
-    if (!Object.keys(updateOps.$set).length && !updateOps.$unset) {
+    if (!Object.keys(updates).length) {
       return res.status(400).json({ error: 'No profile changes provided' });
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      updateOps,
-      { new: true, runValidators: true }
-    );
+    const user = await updateUserById(req.user._id, updates);
     res.json({ user, message: 'Profile updated successfully' });
   } catch (err) {
     if (err.message?.toLowerCase().includes('profile image')) {
@@ -87,11 +83,7 @@ router.put('/', auth, async (req, res) => {
 router.put('/reminders', auth, async (req, res) => {
   try {
     const { reminders } = req.body;
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { $set: { reminders } },
-      { new: true }
-    );
+    const user = await updateUserById(req.user._id, { reminders });
     res.json({ user, message: 'Reminders updated' });
   } catch (err) {
     res.status(400).json({ error: 'Failed to update reminders' });
@@ -103,11 +95,7 @@ router.put('/reminders', auth, async (req, res) => {
 router.put('/privacy', auth, async (req, res) => {
   try {
     const { privacy } = req.body;
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { $set: { privacy } },
-      { new: true }
-    );
+    const user = await updateUserById(req.user._id, { privacy });
     res.json({ user });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update privacy settings' });
@@ -118,15 +106,12 @@ router.put('/privacy', auth, async (req, res) => {
 router.get('/friend/:id', auth, async (req, res) => {
   try {
     const viewer = req.user;
-    const friend = await User.findById(req.params.id).select('-password');
+    const friend = await getUserById(req.params.id);
     if (!friend) return res.status(404).json({ error: 'User not found' });
 
     // Check if they are actually friends
     // friends may be populated objects or raw ObjectIds — handle both
-    const isFriend = viewer.friends.some(f => {
-      const id = f._id ? f._id.toString() : f.toString();
-      return id === friend._id.toString();
-    });
+    const isFriend = (viewer.friends || []).map(String).includes(String(friend._id));
     if (!isFriend) return res.status(403).json({ error: 'You are not friends with this user' });
 
     const privacy = friend.privacy || {};
@@ -146,10 +131,7 @@ router.get('/friend/:id', auth, async (req, res) => {
     // Add progress if allowed
     let progress = [];
     if (privacy.showProgress !== false) {
-      progress = await Progress.find({ user: friend._id })
-        .sort({ date: -1 })
-        .limit(30)
-        .lean();
+      progress = await listProgressEntries(friend._id, { limit: 30 });
     }
 
     res.json({ friend: result, progress });

@@ -2,10 +2,27 @@ const express = require('express');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
-const User = require('../models/User');
-const SignupOtp = require('../models/SignupOtp');
 const { auth } = require('../middleware/auth');
 const { sendPasswordResetEmail, sendSignupVerificationEmail } = require('../utils/email');
+const {
+  getUserById,
+  getUserByEmail,
+  createUser,
+  updateUserById,
+  updateUserPassword,
+  setPremiumForUser,
+  setResetTokenForUser,
+  clearResetTokenForUser,
+  comparePassword,
+  normalizeEmail,
+} = require('../src/db/users');
+const {
+  upsertSignupOtp,
+  deleteSignupOtpByEmail,
+  findSignupOtp,
+  findPasswordResetUserByCode,
+  hashOtp,
+} = require('../src/db/signupOtp');
 
 const router = express.Router();
 const PASSWORD_RESET_EXPIRES_MINUTES = Number(process.env.PASSWORD_RESET_EXPIRES_MINUTES || 30);
@@ -18,8 +35,6 @@ const PAYMONGO_PREMIUM_AMOUNT = Math.round(PAYMONGO_PREMIUM_PRICE_PHP * 100);
 const FRONTEND_URL = (process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
 const PAYMONGO_CHECKOUT_DESCRIPTION = 'heAlthy Premium membership';
 const PAYMONGO_CHECKOUT_PRODUCT_NAME = 'heAlthy Premium';
-
-const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -67,13 +82,9 @@ const resetPasswordLimiter = rateLimit({
   message: { error: 'Too many password reset attempts. Please try again later.' },
 });
 
-const hashOtpToken = (token) => {
-  return crypto.createHash('sha256').update(token).digest('hex');
-};
-
 const createOtpCode = () => {
   const plainCode = crypto.randomInt(0, 1000000).toString().padStart(6, '0');
-  const hashedCode = hashOtpToken(plainCode);
+  const hashedCode = hashOtp(plainCode);
   return { plainCode, hashedCode };
 };
 
@@ -98,17 +109,6 @@ const normalizeAvatarDataUrl = (avatarUrl) => {
   }
 
   return trimmed;
-};
-
-const findUserByResetCode = async (email, code) => {
-  const normalizedEmail = normalizeEmail(email);
-  const hashedCode = hashOtpToken(String(code));
-
-  return User.findOne({
-    email: normalizedEmail,
-    passwordResetToken: hashedCode,
-    passwordResetExpires: { $gt: new Date() },
-  });
 };
 
 const normalizeProfileInput = (profile) => {
@@ -244,29 +244,19 @@ router.post('/request-signup-otp', signupOtpRequestLimiter, async (req, res) => 
     }
 
     const normalizedEmail = normalizeEmail(email);
-    const existingUser = await User.findOne({ email: normalizedEmail });
+    const existingUser = await getUserByEmail(normalizedEmail);
     if (existingUser) {
       return res.status(400).json({ error: 'An account with this email already exists' });
     }
 
-    const { plainCode, hashedCode } = createOtpCode();
+    const { plainCode } = createOtpCode();
     const expiresAt = new Date(Date.now() + SIGNUP_OTP_EXPIRES_MINUTES * 60 * 1000);
 
-    await SignupOtp.findOneAndUpdate(
-      { email: normalizedEmail },
-      {
-        $set: {
-          email: normalizedEmail,
-          codeHash: hashedCode,
-          expiresAt,
-        },
-      },
-      {
-        upsert: true,
-        new: true,
-        setDefaultsOnInsert: true,
-      }
-    );
+    await upsertSignupOtp({
+      email: normalizedEmail,
+      code: plainCode,
+      expiresAt: expiresAt.toISOString(),
+    });
 
     try {
       await sendSignupVerificationEmail({
@@ -282,7 +272,7 @@ router.post('/request-signup-otp', signupOtpRequestLimiter, async (req, res) => 
       });
     } catch (emailErr) {
       console.error('Signup verification email failed:', emailErr.message);
-      await SignupOtp.deleteOne({ email: normalizedEmail });
+      await deleteSignupOtpByEmail(normalizedEmail);
       return res.status(500).json({ error: 'Unable to send verification email. Please try again.' });
     }
   } catch (err) {
@@ -309,22 +299,18 @@ router.post('/register', signupOtpVerifyLimiter, async (req, res) => {
     const safeAvatarUrl = normalizeAvatarDataUrl(avatarUrl);
     const safeProfile = normalizeProfileInput(profile);
 
-    const existingUser = await User.findOne({ email: normalizedEmail });
+    const existingUser = await getUserByEmail(normalizedEmail);
     if (existingUser) {
       return res.status(400).json({ error: 'An account with this email already exists' });
     }
 
-    const pendingSignup = await SignupOtp.findOne({
-      email: normalizedEmail,
-      codeHash: hashOtpToken(String(code)),
-      expiresAt: { $gt: new Date() },
-    });
+    const pendingSignup = await findSignupOtp({ email: normalizedEmail, code });
 
     if (!pendingSignup) {
       return res.status(400).json({ error: 'Invalid verification code or code expired' });
     }
 
-    const user = await User.create({
+    const user = await createUser({
       name: String(name).trim(),
       email: normalizedEmail,
       password,
@@ -332,7 +318,7 @@ router.post('/register', signupOtpVerifyLimiter, async (req, res) => {
       profile: safeProfile,
     });
 
-    await SignupOtp.deleteOne({ _id: pendingSignup._id });
+    await deleteSignupOtpByEmail(normalizedEmail);
 
     const token = generateToken(user._id);
 
@@ -355,8 +341,8 @@ router.post('/login', loginLimiter, async (req, res) => {
     }
 
     const normalizedEmail = normalizeEmail(email);
-    const user = await User.findOne({ email: normalizedEmail });
-    if (!user || !(await user.comparePassword(password))) {
+    const user = await getUserByEmail(normalizedEmail, { includePassword: true });
+    if (!user || !(await comparePassword(password, user.password))) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
@@ -377,7 +363,7 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
     }
 
     const normalizedEmail = normalizeEmail(email);
-    const user = await User.findOne({ email: normalizedEmail });
+    const user = await getUserByEmail(normalizedEmail, { includePassword: true });
     const genericResponse = {
       message: 'If an account with that email exists, a 6-digit reset code has been sent.',
     };
@@ -389,9 +375,7 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
     const { plainCode, hashedCode } = createOtpCode();
     const expiresAt = new Date(Date.now() + PASSWORD_RESET_EXPIRES_MINUTES * 60 * 1000);
 
-    user.passwordResetToken = hashedCode;
-    user.passwordResetExpires = expiresAt;
-    await user.save({ validateBeforeSave: false });
+    await setResetTokenForUser(user._id, hashedCode, expiresAt.toISOString());
 
     try {
       await sendPasswordResetEmail({
@@ -404,9 +388,7 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
       return res.json(genericResponse);
     } catch (emailErr) {
       console.error('Password reset email failed:', emailErr.message);
-      user.passwordResetToken = undefined;
-      user.passwordResetExpires = undefined;
-      await user.save({ validateBeforeSave: false });
+      await clearResetTokenForUser(user._id);
       return res.status(500).json({ error: 'Unable to send reset email. Please try again.' });
     }
   } catch (err) {
@@ -426,7 +408,7 @@ router.post('/verify-reset-code', resetPasswordLimiter, async (req, res) => {
       return res.status(400).json({ error: 'A valid 6-digit reset code is required' });
     }
 
-    const user = await findUserByResetCode(email, code);
+    const user = await findPasswordResetUserByCode({ email, code });
     if (!user) {
       return res.status(400).json({ error: 'Invalid email or reset code, or the code has expired' });
     }
@@ -452,16 +434,14 @@ router.post('/reset-password', resetPasswordLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
-    const user = await findUserByResetCode(email, code);
+    const user = await findPasswordResetUserByCode({ email, code });
 
     if (!user) {
       return res.status(400).json({ error: 'Invalid email or reset code, or the code has expired' });
     }
 
-    user.password = password;
-    user.passwordResetToken = undefined;
-    user.passwordResetExpires = undefined;
-    await user.save();
+    await updateUserPassword(user._id, password);
+    await clearResetTokenForUser(user._id);
 
     return res.json({ message: 'Password reset successful. You can now sign in.' });
   } catch (err) {
@@ -561,14 +541,13 @@ router.post('/premium/checkout/:checkoutSessionId/confirm', auth, async (req, re
       });
     }
 
-    req.user.isPremium = true;
-    await req.user.save();
+    const updatedUser = await setPremiumForUser(req.user._id, { grantedBy: 'paymongo' });
 
     return res.json({
       verified: true,
       message: 'Premium activated after verified QRPH payment.',
       checkoutSession: summary,
-      user: req.user,
+      user: updatedUser,
     });
   } catch (err) {
     const status = err.status || 500;

@@ -1,8 +1,8 @@
 const crypto = require('crypto');
 const express = require('express');
-const Payment = require('../models/Payment');
-const User = require('../models/User');
 const { auth } = require('../middleware/auth');
+const { upsertPayment, getPaymentBySourceId, getPaymentByPaymentId, updatePayment, setPaymentPaid } = require('../src/db/payments');
+const { updateUserById } = require('../src/db/users');
 const paymongo = require('../src/config/paymongo');
 
 const router = express.Router();
@@ -78,17 +78,11 @@ const verifyWebhookSignature = (rawBodyBuffer, signatureHeader, isLiveMode) => {
 };
 
 const grantPremiumToUser = async (userId) => {
-  return User.findByIdAndUpdate(
-    userId,
-    {
-      $set: {
-        isPremium: true,
-        premiumGrantedAt: new Date(),
-        premiumGrantedBy: 'paymongo',
-      },
-    },
-    { new: true, runValidators: true }
-  );
+  return updateUserById(userId, {
+    isPremium: true,
+    premiumGrantedAt: new Date().toISOString(),
+    premiumGrantedBy: 'paymongo',
+  });
 };
 
 const createPaymentCharge = async (paymentRecord) => {
@@ -118,10 +112,11 @@ const createPaymentCharge = async (paymentRecord) => {
 };
 
 const markPaymentPaid = async (paymentRecord, paymentResource) => {
-  paymentRecord.paymentId = paymentResource?.id || paymentRecord.paymentId;
-  paymentRecord.status = 'paid';
-  paymentRecord.paidAt = new Date(paymentResource?.attributes?.paid_at ? paymentResource.attributes.paid_at * 1000 : Date.now());
-  await paymentRecord.save();
+  await setPaymentPaid({
+    sourceId: paymentRecord.sourceId,
+    paymentId: paymentResource?.id || paymentRecord.paymentId,
+    paidAt: paymentResource?.attributes?.paid_at ? new Date(paymentResource.attributes.paid_at * 1000).toISOString() : new Date().toISOString(),
+  });
   await grantPremiumToUser(paymentRecord.userId);
 };
 
@@ -175,22 +170,12 @@ router.post('/create-qrph-source', auth, async (req, res) => {
       throw new Error('PayMongo did not return a source object');
     }
 
-    await Payment.findOneAndUpdate(
-      { sourceId: source.id },
-      {
-        $setOnInsert: {
-          userId: req.user._id,
-          sourceId: source.id,
-          amount: amountInCentavos,
-          status: 'pending',
-        },
-      },
-      {
-        upsert: true,
-        new: true,
-        setDefaultsOnInsert: true,
-      }
-    );
+    await upsertPayment({
+      userId: req.user._id,
+      sourceId: source.id,
+      amount: amountInCentavos,
+      status: 'pending',
+    });
 
     return res.status(201).json(source);
   } catch (err) {
@@ -207,7 +192,7 @@ router.get('/status/:sourceId', auth, async (req, res) => {
       return res.status(400).json({ error: 'sourceId is required' });
     }
 
-    const paymentRecord = await Payment.findOne({ sourceId }).select('userId status');
+    const paymentRecord = await getPaymentBySourceId(sourceId);
 
     if (!paymentRecord) {
       return res.status(404).json({ error: 'Payment not found' });
@@ -247,7 +232,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
     if (eventType === 'source.chargeable') {
       const sourceId = eventData.id;
-      const paymentRecord = await Payment.findOne({ sourceId });
+      const paymentRecord = await getPaymentBySourceId(sourceId);
 
       if (!paymentRecord) {
         return res.status(200).json({ message: 'SUCCESS' });
@@ -259,13 +244,14 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
       if (!paymentRecord.paymentId) {
         const paymentResource = await createPaymentCharge(paymentRecord);
-        paymentRecord.paymentId = paymentResource?.id || paymentRecord.paymentId;
-        paymentRecord.status = paymentResource?.attributes?.status || paymentRecord.status;
+        await updatePayment(paymentRecord.sourceId, {
+          paymentId: paymentResource?.id || paymentRecord.paymentId,
+          status: paymentResource?.attributes?.status || paymentRecord.status,
+          paidAt: paymentResource?.attributes?.paid_at ? new Date(paymentResource.attributes.paid_at * 1000).toISOString() : paymentRecord.paidAt,
+        });
 
         if (paymentResource?.attributes?.status === 'paid') {
           await markPaymentPaid(paymentRecord, paymentResource);
-        } else {
-          await paymentRecord.save();
         }
       }
 
@@ -275,9 +261,9 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     if (eventType === 'payment.paid') {
       const paymentId = eventData.id;
       const sourceId = eventData.attributes?.source?.id;
-      const paymentRecord = await Payment.findOne({
-        $or: [{ paymentId }, { sourceId }],
-      });
+      const paymentRecord = paymentId
+        ? await getPaymentByPaymentId(paymentId)
+        : await getPaymentBySourceId(sourceId);
 
       if (!paymentRecord) {
         return res.status(200).json({ message: 'SUCCESS' });

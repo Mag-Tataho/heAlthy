@@ -1,6 +1,6 @@
 const express = require('express');
-const User = require('../models/User');
 const { adminSecret } = require('../middleware/adminSecret');
+const { updateUserById } = require('../src/db/users');
 
 const router = express.Router();
 
@@ -12,18 +12,11 @@ router.post('/upgrade-user', adminSecret, async (req, res) => {
       return res.status(400).json({ error: 'userId is required' });
     }
 
-    const premiumGrantedAt = new Date();
-    const user = await User.findByIdAndUpdate(
-      userId,
-      {
-        $set: {
-          isPremium: true,
-          premiumGrantedAt,
-          premiumGrantedBy: 'admin',
-        },
-      },
-      { new: true, runValidators: true }
-    );
+    const user = await updateUserById(userId, {
+      isPremium: true,
+      premiumGrantedAt: new Date().toISOString(),
+      premiumGrantedBy: 'admin',
+    });
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });

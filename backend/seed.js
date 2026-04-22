@@ -1,22 +1,18 @@
 require('dotenv').config();
-const mongoose = require('mongoose');
-
-// Seed creates initial admin/test user and confirms food route is functional
-// The food database is stored in memory in routes/food.js (no DB model needed)
-// This script seeds a test user for development purposes
-
-const User = require('./models/User');
+const { supabase, assertSupabaseConfigured } = require('./src/config/supabase');
+const { createUser } = require('./src/db/users');
 
 const seedData = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/diet-planner');
-    console.log('✅ Connected to MongoDB');
+    assertSupabaseConfigured();
+    if (!supabase) {
+      throw new Error('Supabase client is not configured');
+    }
 
-    // Clear existing test users
-    await User.deleteMany({ email: { $in: ['free@test.com', 'premium@test.com'] } });
+    const seedEmails = ['free@test.com', 'premium@test.com'];
+    await supabase.from('users').delete().in('email', seedEmails);
 
-    // Create free user
-    const freeUser = await User.create({
+    await createUser({
       name: 'Free User',
       email: 'free@test.com',
       password: 'password123',
@@ -32,8 +28,7 @@ const seedData = async () => {
       },
     });
 
-    // Create premium user
-    const premiumUser = await User.create({
+    await createUser({
       name: 'Premium User',
       email: 'premium@test.com',
       password: 'password123',
@@ -54,19 +49,16 @@ const seedData = async () => {
       },
     });
 
-    console.log('✅ Test users created:');
-    console.log('   Free: free@test.com / password123');
-    console.log('   Premium: premium@test.com / password123');
-    console.log('');
-    console.log('✅ Food database is served from memory (100 items in routes/food.js)');
-    console.log('🌱 Seed complete!');
-
-    await mongoose.disconnect();
+    console.log('Seed complete.');
+    console.log('Free: free@test.com / password123');
+    console.log('Premium: premium@test.com / password123');
     process.exit(0);
   } catch (err) {
-    console.error('❌ Seed error:', err);
+    console.error('Seed error:', err);
     process.exit(1);
   }
 };
 
-seedData();
+if (require.main === module) {
+  seedData();
+}
