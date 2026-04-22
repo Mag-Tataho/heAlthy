@@ -74,24 +74,99 @@ Use [frontend/.env.example](frontend/.env.example) as the local template for fro
 
 ---
 
-## Deployment
-Deploy the frontend to Vercel and keep the backend on a separate Node host.
+## Deployment (GitHub + Vercel + MongoDB Atlas)
 
-### Frontend on Vercel
-1. Set the Vercel project root to `frontend/`.
-2. Use `npm run build` as the build command.
-3. Set `VITE_API_URL` in Vercel to your deployed backend API URL.
-4. Keep [frontend/vercel.json](frontend/vercel.json) so React Router routes resolve correctly on refresh.
+This repo is set up for two Vercel projects from one GitHub repo:
+- Frontend project root: [frontend](frontend)
+- Backend project root: [backend](backend)
 
-### Backend hosting
-1. Deploy the Express backend to a Node host such as Render, Railway, Fly.io, or a VPS.
-2. Set `CLIENT_URL` to your Vercel frontend URL.
-3. Set `PAYMONGO_SECRET_KEY`, `PAYMONGO_WEBHOOK_SECRET`, and `ADMIN_SECRET` in the backend environment.
+### 1. Push latest code to GitHub
+Run these commands from the repository root:
 
-### PayMongo webhook
-1. Point the PayMongo webhook to `https://YOUR-BACKEND-DOMAIN/api/payments/webhook`.
-2. Keep the webhook in Test Mode until you are ready for production.
-3. Use the local test script to verify the full payment flow before shipping.
+git add .
+git commit -m "Prepare Vercel deployment"
+git push origin main
+
+If your branch name is not main, replace it with your branch.
+
+### 2. Create MongoDB Atlas database
+1. Create or sign in to MongoDB Atlas.
+2. Create a cluster (M0 free tier is fine for testing).
+3. Create a database user with password.
+4. Add Network Access:
+	- For quick setup: allow 0.0.0.0/0
+	- For stricter setup: allow only Vercel egress ranges
+5. Get your connection string (Drivers > Node.js), for example:
+	mongodb+srv://USER:PASSWORD@cluster-name.xxxxx.mongodb.net/healthy?retryWrites=true&w=majority
+
+### 3. Deploy backend to Vercel
+1. In Vercel dashboard, click New Project.
+2. Import your GitHub repository.
+3. Set Root Directory to [backend](backend).
+4. Framework Preset: Other.
+5. Add environment variables in Vercel Project Settings > Environment Variables:
+	- MONGODB_URI = your Atlas connection string
+	- JWT_SECRET = long random secret
+	- JWT_EXPIRES_IN = 7d
+	- CLIENT_URL = your frontend Vercel URL
+	- FRONTEND_URL = your frontend Vercel URL
+	- CORS_ORIGINS = your frontend URL (or comma-separated list including preview URLs)
+	- GROQ_API_KEY
+	- PAYMONGO_SECRET_KEY
+	- PAYMONGO_PUBLIC_KEY (optional)
+	- PAYMONGO_PREMIUM_PRICE_PHP = 199
+	- PAYMONGO_WEBHOOK_SECRET
+	- ADMIN_SECRET
+	- PASSWORD_RESET_EXPIRES_MINUTES = 30
+	- SIGNUP_OTP_EXPIRES_MINUTES = 10
+	- MAX_AVATAR_DATA_URL_LENGTH = 2500000
+	- EMAIL_ID
+	- EMAIL_PASSWORD
+	- MAIL_FROM
+6. Deploy.
+7. Open backend health check:
+	- https://YOUR-BACKEND-PROJECT.vercel.app/api/health
+
+### 4. Deploy frontend to Vercel
+1. In Vercel dashboard, click New Project.
+2. Import the same GitHub repository again.
+3. Set Root Directory to [frontend](frontend).
+4. Keep build defaults for Vite:
+	- Build Command: npm run build
+	- Output Directory: dist
+5. Add environment variable:
+	- VITE_API_URL = https://YOUR-BACKEND-PROJECT.vercel.app
+6. Deploy.
+
+### 5. Re-check backend CORS after frontend deploy
+Update backend env variables if needed:
+- CLIENT_URL = exact frontend domain
+- FRONTEND_URL = exact frontend domain
+- CORS_ORIGINS = exact frontend domain (and optional preview domains)
+
+Then redeploy backend from Vercel Deployments tab.
+
+### 6. Configure PayMongo webhook
+1. In PayMongo dashboard (Test Mode first), set webhook URL to:
+	- https://YOUR-BACKEND-PROJECT.vercel.app/api/payments/webhook
+2. Subscribe to events:
+	- source.chargeable
+	- payment.paid
+3. Copy webhook secret from PayMongo and set PAYMONGO_WEBHOOK_SECRET in backend Vercel env.
+4. Redeploy backend once after setting the secret.
+
+### 7. End-to-end verification checklist
+1. Frontend can register and login.
+2. Profile page loads and saves.
+3. Backend health endpoint returns ok.
+4. Premium checkout creates PayMongo session.
+5. Payment success returns to frontend payment success page.
+6. User becomes premium after webhook/confirmation.
+
+### 8. Useful local verification command
+Run from repository root to validate local PayMongo flow:
+
+powershell -ExecutionPolicy Bypass -File .\scripts\test-paymongo-local.ps1 -WebhookMode PaymentPaid
 
 ---
 

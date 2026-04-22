@@ -12,7 +12,8 @@ import SetNewPassword from './pages/SetNewPassword';
 import ResetPasswordSuccess from './pages/ResetPasswordSuccess';
 import Dashboard      from './pages/Dashboard';
 import Profile        from './pages/Profile';
-import Upgrade        from './pages/Upgrade';
+import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentFailed  from './pages/PaymentFailed';
 import MealPlans      from './pages/MealPlans';
 import MealPlanDetail from './pages/MealPlanDetail';
 import Progress       from './pages/Progress';
@@ -57,7 +58,9 @@ function AppRoutes() {
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route path="dashboard"       element={<Dashboard />} />
         <Route path="profile"         element={<Profile />} />
-        <Route path="upgrade"         element={<Upgrade />} />
+        <Route path="upgrade"         element={<Navigate to="/profile" replace />} />
+        <Route path="payment/success" element={<PaymentSuccess />} />
+        <Route path="payment/failed"  element={<PaymentFailed />} />
         <Route path="meal-plans"      element={<MealPlans />} />
         <Route path="meal-plans/:id"  element={<MealPlanDetail />} />
         <Route path="progress"        element={<Progress />} />

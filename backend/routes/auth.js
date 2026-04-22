@@ -193,11 +193,9 @@ const createPremiumCheckoutPayload = (user) => {
             quantity: 1,
           },
         ],
-        success_url: buildFrontendUrl('/profile', {
-          premiumCheckout: 'success',
-        }),
-        cancel_url: buildFrontendUrl('/profile', {
-          premiumCheckout: 'cancelled',
+        success_url: buildFrontendUrl('/payment/success'),
+        cancel_url: buildFrontendUrl('/payment/failed', {
+          reason: 'cancelled',
         }),
         description: PAYMONGO_CHECKOUT_DESCRIPTION,
         send_email_receipt: true,

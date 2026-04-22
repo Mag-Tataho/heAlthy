@@ -30,7 +30,7 @@ export default function PremiumGate({ children, featureName }) {
             This feature is blurred because it is only available to Premium members.
           </p>
           <Link
-            to="/upgrade"
+            to="/profile"
             className="mt-5 inline-flex items-center justify-center rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-amber-500"
           >
             {ctaText}
