@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { Clock3, Pencil, Plus, Search, Share2, Trash2, X } from '../components/OpenMojiIcons';
 import api from '../utils/api';
+import FoodCategoryIcon from '../components/FoodCategoryIcon';
 
 const CATEGORIES = ['breakfast','lunch','dinner','snack','beverage','other'];
 const MEAL_TIMES = ['breakfast','morning_snack','lunch','afternoon_snack','dinner','any'];
-const CAT_EMOJI  = { breakfast:'🍳', lunch:'🥙', dinner:'🍲', snack:'🍎', beverage:'🥤', other:'🍽️' };
+const toFoodCategory = (value) => (value === 'beverage' ? 'beverages' : value);
 
 const emptyForm = { name:'', description:'', calories:'', protein:'', carbs:'', fat:'', fiber:'', serving:'1 serving', ingredients:'', category:'other', mealTime:'any', isPublic:false };
 
@@ -16,7 +18,7 @@ function MealSharePanel({ meal, onShare, onCancel }) {
     <div className="mt-3 pt-3 border-t border-sage-100 dark:border-gray-800 animate-fadeIn">
       <textarea ref={ref} value={msg} onChange={e => setMsg(e.target.value)}
         className="input-field text-sm resize-none mb-2" rows={2}
-        placeholder={`I made: ${meal.name}! 🍽️`} maxLength={300} />
+        placeholder={`I made: ${meal.name}!`} maxLength={300} />
       <div className="flex gap-2">
         <button onClick={() => onShare(meal, msg)} className="btn-primary text-sm py-2 flex-1">Share to Feed</button>
         <button onClick={onCancel} className="btn-secondary text-sm py-2">Cancel</button>
@@ -29,14 +31,17 @@ function MealSharePanel({ meal, onShare, onCancel }) {
 // Full detail modal — works for own meals and public/community meals
 function MealDetailModal({ meal, onClose }) {
   if (!meal) return null;
-  const CAT_EMOJI_M = { breakfast:'🍳', lunch:'🥙', dinner:'🍲', snack:'🍎', beverage:'🥤', other:'🍽️' };
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md max-h-[85vh] overflow-y-auto shadow-2xl animate-fadeIn" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="sticky top-0 bg-white dark:bg-gray-900 px-5 py-4 border-b border-sage-100 dark:border-gray-800 flex items-center justify-between rounded-t-2xl">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">{CAT_EMOJI_M[meal.category] || '🍽️'}</span>
+            <FoodCategoryIcon
+              category={meal.category === 'beverage' ? 'beverages' : meal.category}
+              className="h-8 w-8 text-sage-600 dark:text-sage-300"
+              strokeWidth={1.9}
+            />
             <div>
               <h3 className="font-display text-lg font-semibold text-sage-900 dark:text-white">{meal.name}</h3>
               <div className="flex items-center gap-2 mt-0.5">
@@ -45,7 +50,9 @@ function MealDetailModal({ meal, onClose }) {
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-sage-100 dark:bg-gray-800 flex items-center justify-center text-sage-600 dark:text-gray-400 hover:bg-sage-200 dark:hover:bg-gray-700 flex-shrink-0 text-sm">✕</button>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-sage-100 dark:bg-gray-800 flex items-center justify-center text-sage-600 dark:text-gray-400 hover:bg-sage-200 dark:hover:bg-gray-700 flex-shrink-0 text-sm">
+            <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+          </button>
         </div>
 
         <div className="p-5 space-y-4">
@@ -84,8 +91,22 @@ function MealDetailModal({ meal, onClose }) {
 
           {/* Category + Meal Time */}
           <div className="flex flex-wrap gap-2">
-            {meal.category && <span className="text-xs bg-sage-50 dark:bg-gray-800 text-sage-700 dark:text-gray-300 px-3 py-1 rounded-full capitalize">{CAT_EMOJI_M[meal.category]} {meal.category}</span>}
-            {meal.mealTime && meal.mealTime !== 'any' && <span className="text-xs bg-sage-50 dark:bg-gray-800 text-sage-700 dark:text-gray-300 px-3 py-1 rounded-full capitalize">⏰ {meal.mealTime.replace('_',' ')}</span>}
+            {meal.category && (
+              <span className="text-xs bg-sage-50 dark:bg-gray-800 text-sage-700 dark:text-gray-300 px-3 py-1 rounded-full capitalize inline-flex items-center gap-1.5">
+                <FoodCategoryIcon
+                  category={meal.category === 'beverage' ? 'beverages' : meal.category}
+                  className="h-3.5 w-3.5"
+                  strokeWidth={2}
+                />
+                {meal.category}
+              </span>
+            )}
+            {meal.mealTime && meal.mealTime !== 'any' && (
+              <span className="text-xs bg-sage-50 dark:bg-gray-800 text-sage-700 dark:text-gray-300 px-3 py-1 rounded-full capitalize inline-flex items-center gap-1.5">
+                <Clock3 className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                {meal.mealTime.replace('_',' ')}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -171,7 +192,7 @@ export default function CustomMeals() {
     try {
       await api.post('/social/post', {
         type: 'custom_meal',
-        content: msg || `I made this custom meal: ${meal.name}! 🍽️`,
+        content: msg || `I made this custom meal: ${meal.name}!`,
         data: {
           mealId:      meal._id,
           name:        meal.name,
@@ -188,7 +209,7 @@ export default function CustomMeals() {
         visibility: 'friends',
       });
       setShareId(null); setShareMsg('');
-      alert('Shared to your friends feed! 🎉');
+      alert('Shared to your friends feed!');
     } catch { setError('Failed to share'); }
   };
 
@@ -204,7 +225,8 @@ export default function CustomMeals() {
           <p className="text-sage-600 dark:text-gray-400 mt-1">Create and manage your own meals</p>
         </div>
         <button onClick={() => { setShowForm(true); setEditId(null); setForm(emptyForm); }} className="btn-primary flex items-center gap-2">
-          + New Meal
+          <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+          New Meal
         </button>
       </div>
 
@@ -224,7 +246,7 @@ export default function CustomMeals() {
       {showForm && (
         <div className="card animate-fadeIn border-sage-300 dark:border-sage-700">
           <h2 className="font-display text-lg font-semibold text-sage-800 dark:text-white mb-4">
-            {editId ? '✏️ Edit Meal' : '+ Create Custom Meal'}
+            {editId ? 'Edit Meal' : 'Create Custom Meal'}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
@@ -238,7 +260,7 @@ export default function CustomMeals() {
             <div>
               <label className="label">Category</label>
               <select value={form.category} onChange={e => set('category', e.target.value)} className="input-field">
-                {CATEGORIES.map(c => <option key={c} value={c}>{CAT_EMOJI[c]} {c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
+                {CATEGORIES.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
               </select>
             </div>
             <div>
@@ -289,7 +311,7 @@ export default function CustomMeals() {
           {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
           <div className="flex gap-3 mt-5">
             <button onClick={handleSubmit} disabled={saving} className="btn-primary flex-1 flex items-center justify-center gap-2">
-              {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Saving...</> : editId ? '💾 Save Changes' : '+ Create Meal'}
+              {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Saving...</> : editId ? 'Save Changes' : 'Create Meal'}
             </button>
             <button onClick={() => { setShowForm(false); setEditId(null); setError(''); }} className="btn-secondary">Cancel</button>
           </div>
@@ -299,15 +321,19 @@ export default function CustomMeals() {
       {/* My Meals */}
       {tab === 'mine' && (
         loading ? (
-          <div className="card text-center py-10"><div className="loading-pulse text-4xl mb-3">🍽️</div><p className="text-sage-500 dark:text-gray-400">Loading meals...</p></div>
+          <div className="card text-center py-10"><FoodCategoryIcon category="other" className="loading-pulse h-10 w-10 text-sage-500 dark:text-sage-400 mx-auto mb-3" strokeWidth={1.9} /><p className="text-sage-500 dark:text-gray-400">Loading meals...</p></div>
         ) : meals.length === 0 ? (
-          <div className="card text-center py-10"><div className="text-5xl mb-3">🍽️</div><p className="font-medium text-sage-700 dark:text-gray-300 mb-1">No custom meals yet</p><p className="text-sage-400 dark:text-gray-500 text-sm">Click + New Meal to get started!</p></div>
+          <div className="card text-center py-10"><FoodCategoryIcon category="other" className="h-12 w-12 text-sage-500 dark:text-sage-400 mx-auto mb-3" strokeWidth={1.9} /><p className="font-medium text-sage-700 dark:text-gray-300 mb-1">No custom meals yet</p><p className="text-sage-400 dark:text-gray-500 text-sm">Click New Meal to get started!</p></div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 stagger-children">
             {meals.map(meal => (
               <div key={meal._id} className="card hover:shadow-md transition-all duration-200">
                 <div className="flex items-start gap-3">
-                  <span className="text-3xl flex-shrink-0">{CAT_EMOJI[meal.category] || '🍽️'}</span>
+                  <FoodCategoryIcon
+                    category={toFoodCategory(meal.category || 'other')}
+                    className="h-8 w-8 text-sage-600 dark:text-sage-300 flex-shrink-0"
+                    strokeWidth={1.9}
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <p className="font-medium text-sage-900 dark:text-white truncate">{meal.name}</p>
@@ -315,23 +341,30 @@ export default function CustomMeals() {
                     </div>
                     {meal.description && <p className="text-xs text-sage-500 dark:text-gray-400 mt-0.5 line-clamp-1">{meal.description}</p>}
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      {meal.calories && <MacroPill label="🔥" value={meal.calories} unit=" kcal" color="bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400" />}
+                      {meal.calories && <MacroPill label="kcal" value={meal.calories} unit="" color="bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400" />}
                       {meal.protein  && <MacroPill label="P" value={meal.protein}  color="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" />}
                       {meal.carbs    && <MacroPill label="C" value={meal.carbs}    color="bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400" />}
                       {meal.fat      && <MacroPill label="F" value={meal.fat}      color="bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400" />}
                     </div>
                     {meal.ingredients?.length > 0 && (
-                      <p className="text-xs text-sage-400 dark:text-gray-500 mt-1.5 line-clamp-1">📋 {meal.ingredients.join(', ')}</p>
+                      <p className="text-xs text-sage-400 dark:text-gray-500 mt-1.5 line-clamp-1">{meal.ingredients.join(', ')}</p>
                     )}
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3 pt-3 border-t border-sage-50 dark:border-gray-800">
                   <button onClick={() => setViewMeal(meal)} className="btn-secondary text-xs py-1.5 flex-1">View</button>
-                  <button onClick={() => openEdit(meal)} className="btn-secondary text-xs py-1.5 flex-1">✏️ Edit</button>
+                  <button onClick={() => openEdit(meal)} className="btn-secondary text-xs py-1.5 flex-1 inline-flex items-center justify-center gap-1">
+                    <Pencil className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                    Edit
+                  </button>
                   <button onClick={() => { setShareId(meal._id); setShareMsg(''); }}
-                    className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-500 hover:bg-blue-100 flex items-center justify-center text-sm transition-colors">📤</button>
+                    className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-500 hover:bg-blue-100 flex items-center justify-center text-sm transition-colors">
+                    <Share2 className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                  </button>
                   <button onClick={() => setDeleteId(meal._id)}
-                    className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-400 hover:bg-red-100 flex items-center justify-center text-sm transition-colors">🗑️</button>
+                    className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-400 hover:bg-red-100 flex items-center justify-center text-sm transition-colors">
+                    <Trash2 className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                  </button>
                 </div>
                 {shareId === meal._id && (
                   <MealSharePanel
@@ -357,7 +390,7 @@ export default function CustomMeals() {
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fadeIn">
-            <div className="text-4xl text-center mb-3">🗑️</div>
+            <div className="text-center mb-3"><Trash2 className="h-9 w-9 text-red-400 mx-auto" strokeWidth={1.9} aria-hidden="true" /></div>
             <h3 className="font-display text-lg font-semibold text-center text-sage-900 dark:text-white mb-2">Delete Meal?</h3>
             <p className="text-sage-600 dark:text-gray-400 text-sm text-center mb-5">This cannot be undone.</p>
             <div className="flex gap-3">
@@ -389,36 +422,38 @@ function PublicMeals() {
     setLoading(false);
   };
 
-  const CAT_EMOJI = { breakfast:'🍳', lunch:'🥙', dinner:'🍲', snack:'🍎', beverage:'🥤', other:'🍽️' };
-
   return (
     <div className="space-y-4">
       <form onSubmit={search} className="flex gap-2">
         <input value={q} onChange={e => setQ(e.target.value)} className="input-field flex-1" placeholder="Search community meals..." />
-        <button type="submit" className="btn-primary px-4">🔍</button>
+        <button type="submit" className="btn-primary px-4"><Search className="h-4 w-4" strokeWidth={2} aria-hidden="true" /></button>
       </form>
       {loading ? (
-        <div className="card text-center py-8"><div className="loading-pulse text-3xl mb-2">🍽️</div><p className="text-sage-400">Loading...</p></div>
+        <div className="card text-center py-8"><FoodCategoryIcon category="other" className="loading-pulse h-8 w-8 text-sage-500 dark:text-sage-400 mx-auto mb-2" strokeWidth={1.9} /><p className="text-sage-400">Loading...</p></div>
       ) : meals.length === 0 ? (
-        <div className="card text-center py-8"><div className="text-4xl mb-2">🍽️</div><p className="text-sage-500 dark:text-gray-400">No public meals found yet. Be the first to share!</p></div>
+        <div className="card text-center py-8"><FoodCategoryIcon category="other" className="h-10 w-10 text-sage-500 dark:text-sage-400 mx-auto mb-2" strokeWidth={1.9} /><p className="text-sage-500 dark:text-gray-400">No public meals found yet. Be the first to share!</p></div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 stagger-children">
           {meals.map(meal => (
             <div key={meal._id} className="card hover:shadow-md transition-all cursor-pointer" onClick={() => setViewMeal(meal)}>
               <div className="flex items-start gap-3">
-                <span className="text-2xl">{CAT_EMOJI[meal.category] || '🍽️'}</span>
+                <FoodCategoryIcon
+                  category={toFoodCategory(meal.category || 'other')}
+                  className="h-7 w-7 text-sage-600 dark:text-sage-300"
+                  strokeWidth={1.9}
+                />
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sage-900 dark:text-white">{meal.name}</p>
                   <p className="text-xs text-sage-400 dark:text-gray-500">by {meal.user?.name}</p>
                   {meal.description && <p className="text-xs text-sage-500 dark:text-gray-400 mt-1 line-clamp-2">{meal.description}</p>}
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    {meal.calories && <span className="text-xs bg-orange-50 dark:bg-orange-900/20 text-orange-600 px-2 py-0.5 rounded-full">🔥 {meal.calories} kcal</span>}
+                    {meal.calories && <span className="text-xs bg-orange-50 dark:bg-orange-900/20 text-orange-600 px-2 py-0.5 rounded-full">kcal {meal.calories}</span>}
                     {meal.protein  && <span className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 px-2 py-0.5 rounded-full">P {meal.protein}g</span>}
                     {meal.carbs    && <span className="text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-600 px-2 py-0.5 rounded-full">C {meal.carbs}g</span>}
                     {meal.fat      && <span className="text-xs bg-green-50 dark:bg-green-900/20 text-green-600 px-2 py-0.5 rounded-full">F {meal.fat}g</span>}
                   </div>
                   {meal.ingredients?.length > 0 && (
-                    <p className="text-xs text-sage-400 dark:text-gray-500 mt-1.5 line-clamp-1">📋 {meal.ingredients.join(', ')}</p>
+                    <p className="text-xs text-sage-400 dark:text-gray-500 mt-1.5 line-clamp-1">{meal.ingredients.join(', ')}</p>
                   )}
                 </div>
 

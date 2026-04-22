@@ -56,14 +56,173 @@ const parseJSON = (text) => {
   return JSON.parse(cleaned);
 };
 
+const CREDIBLE_HEALTH_SOURCES = [
+  { name: 'World Health Organization', url: 'https://www.who.int/' },
+  { name: 'Centers for Disease Control and Prevention', url: 'https://www.cdc.gov/' },
+  { name: 'National Institutes of Health', url: 'https://www.nih.gov/' },
+  { name: 'NHS', url: 'https://www.nhs.uk/' },
+  { name: 'Academy of Nutrition and Dietetics', url: 'https://www.eatright.org/' },
+];
+
+const CREDIBLE_SOURCE_HOSTS = [
+  'who.int',
+  'cdc.gov',
+  'nih.gov',
+  'medlineplus.gov',
+  'nhs.uk',
+  'fda.gov',
+  'heart.org',
+  'eatright.org',
+  'mayoclinic.org',
+];
+
+const HEALTH_KEYWORDS = [
+  'health', 'healthy', 'nutrition', 'diet', 'meal', 'meals', 'food', 'calorie', 'calories',
+  'protein', 'carb', 'fat', 'fiber', 'vitamin', 'mineral', 'hydration', 'water', 'exercise',
+  'fitness', 'workout', 'wellness', 'sleep', 'weight', 'obesity', 'diabetes', 'cholesterol',
+  'blood pressure', 'heart', 'digest', 'allergy', 'allergies', 'mental health',
+];
+
+const PROGRAMMING_KEYWORDS = [
+  'programming', 'write code', 'coding', 'javascript', 'typescript', 'python', 'java',
+  'c++', 'react', 'html', 'css', 'sql', 'algorithm', 'debug', 'software',
+];
+
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const normalizeAllergyTerms = (allergies = []) => {
+  return [...new Set(
+    (allergies || [])
+      .map((item) => String(item || '').trim().toLowerCase())
+      .filter(Boolean)
+  )];
+};
+
+const findAllergyViolationsInPlan = (planData, forbiddenAllergies = []) => {
+  const haystack = JSON.stringify(planData || {}).toLowerCase();
+  return forbiddenAllergies.filter((term) => {
+    const normalizedTerm = String(term || '').trim().toLowerCase();
+    if (!normalizedTerm) return false;
+
+    if (normalizedTerm.includes(' ')) {
+      return haystack.includes(normalizedTerm);
+    }
+
+    const withWordBoundary = new RegExp(`\\b${escapeRegExp(normalizedTerm)}\\b`, 'i');
+    return withWordBoundary.test(haystack) || haystack.includes(normalizedTerm);
+  });
+};
+
+const generateSafeMealPlanJson = async ({ basePrompt, model, maxTokens, forbiddenAllergies = [] }) => {
+  let retryNote = '';
+
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const prompt = [
+      basePrompt,
+      forbiddenAllergies.length
+        ? `\nSTRICT ALLERGY RULES:\n- Never include or suggest these allergens: ${forbiddenAllergies.join(', ')}.\n- If a meal normally contains any listed allergen, replace it with a safe equivalent.\n- Double-check meal names, descriptions, and ingredients before finalizing.`
+        : '',
+      retryNote,
+    ].join('\n');
+
+    const completion = await getGroq().chat.completions.create({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
+      max_tokens: maxTokens,
+    });
+
+    const content = completion.choices[0].message.content || '';
+
+    let planData;
+    try {
+      planData = parseJSON(content);
+    } catch {
+      retryNote = 'Your previous response was not valid JSON. Return strict JSON only, with no markdown.';
+      continue;
+    }
+
+    const violations = findAllergyViolationsInPlan(planData, forbiddenAllergies);
+    if (!violations.length) {
+      return planData;
+    }
+
+    retryNote = `Your previous response included forbidden allergen terms: ${violations.join(', ')}. Regenerate the entire plan and remove any mention of these allergens.`;
+  }
+
+  const error = new Error('ALLERGY_SAFE_PLAN_FAILED');
+  error.code = 'ALLERGY_SAFE_PLAN_FAILED';
+  throw error;
+};
+
+const getLatestUserMessage = (messages = []) => {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    if (messages[i]?.role === 'user') return String(messages[i].content || '');
+  }
+  return '';
+};
+
+const isHealthOnlyQuestion = (text) => {
+  const lower = String(text || '').trim().toLowerCase();
+  if (!lower) return false;
+
+  const isGreeting = /^(hi|hello|hey|good morning|good afternoon|good evening)\b/.test(lower);
+  if (isGreeting) return true;
+
+  if (PROGRAMMING_KEYWORDS.some((keyword) => lower.includes(keyword))) {
+    return false;
+  }
+
+  return HEALTH_KEYWORDS.some((keyword) => lower.includes(keyword));
+};
+
+const getHealthOnlyRefusal = () => {
+  return [
+    'I can only help with health, nutrition, fitness, and wellness topics.',
+    'Ask a health-related question and I will answer with credible sources.',
+    '',
+    'Sources:',
+    ...CREDIBLE_HEALTH_SOURCES.slice(0, 3).map((source) => `- ${source.name}: ${source.url}`),
+  ].join('\n');
+};
+
+const isCredibleSourceUrl = (url) => {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./i, '').toLowerCase();
+    return CREDIBLE_SOURCE_HOSTS.some((allowed) => hostname === allowed || hostname.endsWith(`.${allowed}`));
+  } catch {
+    return false;
+  }
+};
+
+const ensureCredibleSources = (reply) => {
+  const urls = String(reply || '').match(/https?:\/\/[^\s)]+/gi) || [];
+  const hasTrustedSource = urls.some((url) => isCredibleSourceUrl(url));
+
+  if (hasTrustedSource) {
+    return reply;
+  }
+
+  const fallbackSources = CREDIBLE_HEALTH_SOURCES.slice(0, 3)
+    .map((source) => `- ${source.name}: ${source.url}`)
+    .join('\n');
+
+  const trimmed = String(reply || '').trim();
+  return `${trimmed}\n\nSources:\n${fallbackSources}`.trim();
+};
+
 // ─────────────────────────────────────────────
 // POST /api/ai/basic-meal-plan  (Free)
 // ─────────────────────────────────────────────
 router.post('/basic-meal-plan', auth, freeLimiter, async (req, res) => {
   try {
     const { goal = 'maintain' } = req.body;
+    const userProfile = req.user?.profile || {};
+    const forbiddenAllergies = normalizeAllergyTerms(userProfile.allergies);
 
     const prompt = `Create a healthy 1-day meal plan for someone who wants to ${goal.replace(/_/g, ' ')}.
+User dietary restrictions: ${userProfile.dietaryRestrictions?.join(', ') || 'none'}.
+User allergies: ${forbiddenAllergies.join(', ') || 'none'}.
 Include: Breakfast, Morning Snack, Lunch, Afternoon Snack, Dinner.
 Return ONLY valid JSON, no markdown, no extra text:
 {
@@ -83,15 +242,12 @@ Return ONLY valid JSON, no markdown, no extra text:
   ]
 }`;
 
-    const completion = await getGroq().chat.completions.create({
+    const planData = await generateSafeMealPlanJson({
+      basePrompt: prompt,
       model: GROQ_SMART,
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7,
-      max_tokens: 2000,
+      maxTokens: 2000,
+      forbiddenAllergies,
     });
-
-    const content = completion.choices[0].message.content;
-    const planData = parseJSON(content);
 
     const mealPlan = await MealPlan.create({
       user: req.user._id,
@@ -106,8 +262,8 @@ Return ONLY valid JSON, no markdown, no extra text:
     res.json({ mealPlan, plan: planData });
   } catch (err) {
     console.error('Basic meal plan error:', err);
-    if (err instanceof SyntaxError) {
-      return res.status(500).json({ error: 'AI returned invalid data. Please try again.' });
+    if (err.code === 'ALLERGY_SAFE_PLAN_FAILED') {
+      return res.status(500).json({ error: 'Could not generate an allergy-safe meal plan. Please update your preferences and try again.' });
     }
     res.status(500).json({ error: 'Failed to generate meal plan. Please try again.' });
   }
@@ -120,6 +276,7 @@ router.post('/personalized-meal-plan', premiumAuth, premiumLimiter, async (req, 
   try {
     const { duration = 'weekly' } = req.body;
     const userContext = buildUserContext(req.user);
+    const forbiddenAllergies = normalizeAllergyTerms(req.user?.profile?.allergies);
     const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
     // duration: '1day' or 'weekly' (1–7 days)
@@ -159,15 +316,12 @@ Return ONLY valid JSON, no markdown, no extra text:
   ]
 }`;
 
-    const completion = await getGroq().chat.completions.create({
+    const planData = await generateSafeMealPlanJson({
+      basePrompt: prompt,
       model: GROQ_SMART,
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7,
-      max_tokens: 4000,
+      maxTokens: 4000,
+      forbiddenAllergies,
     });
-
-    const content = completion.choices[0].message.content;
-    const planData = parseJSON(content);
 
     // Ensure all days have dayName
     if (planData.days) {
@@ -192,8 +346,8 @@ Return ONLY valid JSON, no markdown, no extra text:
     res.json({ mealPlan, plan: planData });
   } catch (err) {
     console.error('Personalized meal plan error:', err);
-    if (err instanceof SyntaxError) {
-      return res.status(500).json({ error: 'AI returned invalid data. Please try again.' });
+    if (err.code === 'ALLERGY_SAFE_PLAN_FAILED') {
+      return res.status(500).json({ error: 'Could not generate an allergy-safe personalized plan. Please update your preferences and try again.' });
     }
     res.status(500).json({ error: 'Failed to generate personalized meal plan. Please try again.' });
   }
@@ -240,6 +394,11 @@ router.post('/chat', premiumAuth, premiumLimiter, async (req, res) => {
       return res.status(500).json({ error: 'GROQ_API_KEY is not set in your .env file. Get a free key at https://console.groq.com' });
     }
 
+    const latestUserMessage = getLatestUserMessage(messages);
+    if (!isHealthOnlyQuestion(latestUserMessage)) {
+      return res.json({ reply: getHealthOnlyRefusal() });
+    }
+
     const userContext = buildUserContext(req.user);
 
     const systemPrompt = `You are a friendly, knowledgeable personal nutrition coach for the heAlthy app.
@@ -250,11 +409,13 @@ Your role:
 - Give personalized diet and nutrition advice based on the user's profile above
 - Suggest meals, snacks, and recipes tailored to their goal and preferences
 - Help with calorie counting, macro tracking, and healthy eating habits
-- Answer questions about specific foods, nutrients, and health topics
+- Answer only health, nutrition, fitness, and wellness topics
 - Be encouraging, supportive, and motivating
-- Keep responses concise (under 150 words) unless the user asks for more detail
+- Keep responses concise (under 170 words before the source list) unless the user asks for more detail
 - Use simple language, not medical jargon
 - If asked about serious medical conditions, recommend consulting a doctor
+- For every factual response, include a "Sources:" section with 2-3 credible links from trusted medical/public-health organizations
+- If the user asks for non-health topics, refuse briefly and ask for a health-related question
 
 You are NOT a medical doctor. Always remind users to consult healthcare professionals for medical advice.`;
 
@@ -278,7 +439,7 @@ You are NOT a medical doctor. Always remind users to consult healthcare professi
       return res.status(500).json({ error: 'AI did not return a response. Please try again.' });
     }
 
-    res.json({ reply });
+    res.json({ reply: ensureCredibleSources(reply) });
   } catch (err) {
     console.error('Chat error:', err.message);
     if (err.status === 429) {

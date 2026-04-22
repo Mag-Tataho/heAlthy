@@ -1,25 +1,49 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  ChevronDown,
+  ChevronUp,
+  Clock3,
+  Dumbbell,
+  Flame,
+  Heart,
+  MessageCircle,
+  Scale,
+  Send,
+  Sparkles,
+  Trash2,
+  TrendingUp,
+  UtensilsCrossed,
+  Users,
+  X,
+} from '../components/OpenMojiIcons';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
+import FoodCategoryIcon from '../components/FoodCategoryIcon';
 
 // ── All helpers defined OUTSIDE components to prevent re-render focus loss ──
 
 const POST_TYPE_META = {
-  weight_update:   { icon: '⚖️',  label: 'Weight Update',   color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' },
-  meal_plan:       { icon: '🥗',  label: 'Meal Plan',        color: 'bg-sage-50 dark:bg-sage-900/20 text-sage-600 dark:text-sage-400' },
-  custom_meal:     { icon: '🍽️', label: 'Custom Meal',      color: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' },
-  calorie_log:     { icon: '🔥',  label: 'Calorie Log',      color: 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' },
-  workout_log:     { icon: '🏋️', label: 'Workout',          color: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' },
-  progress_update: { icon: '📈',  label: 'Progress Update',  color: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' },
+  weight_update:   { icon: Scale,           label: 'Weight Update',  color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' },
+  meal_plan:       { icon: UtensilsCrossed, label: 'Meal Plan',      color: 'bg-sage-50 dark:bg-sage-900/20 text-sage-600 dark:text-sage-400' },
+  custom_meal:     { icon: UtensilsCrossed, label: 'Custom Meal',    color: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' },
+  calorie_log:     { icon: Flame,           label: 'Calorie Log',    color: 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' },
+  workout_log:     { icon: Dumbbell,        label: 'Workout',        color: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' },
+  progress_update: { icon: TrendingUp,      label: 'Progress Update',color: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' },
 };
 
 const POST_TYPES = [
-  { value: 'weight_update',   label: '⚖️ Weight Update' },
-  { value: 'calorie_log',     label: '🔥 Calorie Log' },
-  { value: 'workout_log',     label: '🏋️ Workout Log' },
-  { value: 'progress_update', label: '📈 Progress Update' },
+  { value: 'weight_update',   label: 'Weight Update' },
+  { value: 'calorie_log',     label: 'Calorie Log' },
+  { value: 'workout_log',     label: 'Workout Log' },
+  { value: 'progress_update', label: 'Progress Update' },
 ];
+
+const toFoodCategory = (value) => {
+  if (value === 'beverage') return 'beverages';
+  if (['breakfast', 'lunch', 'dinner', 'snack'].includes(value)) return 'snacks';
+  return value || 'other';
+};
 
 function timeAgo(date) {
   const s = Math.floor((Date.now() - new Date(date)) / 1000);
@@ -56,9 +80,15 @@ function MealPlanCard({ data }) {
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-semibold text-sage-800 dark:text-gray-200 text-sm">🥗 {data.title}</p>
+              <p className="font-semibold text-sage-800 dark:text-gray-200 text-sm inline-flex items-center gap-1.5">
+                <UtensilsCrossed className="h-4 w-4 text-sage-600 dark:text-sage-300" strokeWidth={1.9} aria-hidden="true" />
+                {data.title}
+              </p>
               {data.planType === 'personalized' && (
-                <span className="text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full flex-shrink-0">⭐ Personalized</span>
+                <span className="text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full flex-shrink-0 inline-flex items-center gap-1">
+                  <Sparkles className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                  Personalized
+                </span>
               )}
             </div>
             {data.totalCalories && (
@@ -68,9 +98,19 @@ function MealPlanCard({ data }) {
           {(hasDays || hasMeals) && (
             <button
               onClick={() => setExpanded(e => !e)}
-              className="flex-shrink-0 text-xs font-medium text-sage-600 dark:text-gray-300 border border-sage-200 dark:border-gray-600 rounded-lg px-3 py-1.5 hover:bg-white dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+              className="flex-shrink-0 text-xs font-medium text-sage-600 dark:text-gray-300 border border-sage-200 dark:border-gray-600 rounded-lg px-3 py-1.5 hover:bg-white dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors inline-flex items-center gap-1"
             >
-              {expanded ? '▲ Collapse' : '▼ View Plan'}
+              {expanded ? (
+                <>
+                  <ChevronUp className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                  Collapse
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                  View Plan
+                </>
+              )}
             </button>
           )}
         </div>
@@ -119,13 +159,13 @@ function MealPlanCard({ data }) {
                     <p className="text-xs font-semibold text-sage-800 dark:text-gray-200">{m.name}</p>
                     {m.description && <p className="text-xs text-sage-400 dark:text-gray-500 mt-0.5">{m.description}</p>}
                     <div className="flex flex-wrap gap-1.5 mt-1">
-                      {m.calories && <span className="text-xs bg-orange-50 dark:bg-orange-900/20 text-orange-500 px-1.5 py-0.5 rounded">🔥 {m.calories}</span>}
+                      {m.calories && <span className="text-xs bg-orange-50 dark:bg-orange-900/20 text-orange-500 px-1.5 py-0.5 rounded">kcal {m.calories}</span>}
                       {m.protein  && <span className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-500 px-1.5 py-0.5 rounded">P {m.protein}g</span>}
                       {m.carbs    && <span className="text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-500 px-1.5 py-0.5 rounded">C {m.carbs}g</span>}
                       {m.fat      && <span className="text-xs bg-green-50 dark:bg-green-900/20 text-green-500 px-1.5 py-0.5 rounded">F {m.fat}g</span>}
                     </div>
                     {m.ingredients?.length > 0 && (
-                      <p className="text-xs text-sage-300 dark:text-gray-600 mt-1">📋 {m.ingredients.join(', ')}</p>
+                      <p className="text-xs text-sage-300 dark:text-gray-600 mt-1">{m.ingredients.join(', ')}</p>
                     )}
                   </div>
                 </div>
@@ -145,7 +185,9 @@ function MealPlanCard({ data }) {
                   <span className="text-xs font-semibold text-sage-800 dark:text-gray-200">{day.dayName || ''}</span>
                   {day.totalCalories && <span className="text-xs text-sage-400 dark:text-gray-500">· {day.totalCalories} kcal</span>}
                 </div>
-                <span className="text-xs text-sage-400">{expandedDays[i] ? '▲' : '▼'}</span>
+                {expandedDays[i]
+                  ? <ChevronUp className="h-3.5 w-3.5 text-sage-400" strokeWidth={2} aria-hidden="true" />
+                  : <ChevronDown className="h-3.5 w-3.5 text-sage-400" strokeWidth={2} aria-hidden="true" />}
               </button>
               {expandedDays[i] && (
                 <div className="px-4 pb-3 space-y-1.5">
@@ -156,13 +198,13 @@ function MealPlanCard({ data }) {
                         <p className="text-xs font-semibold text-sage-800 dark:text-gray-200">{m.name}</p>
                         {m.description && <p className="text-xs text-sage-400 dark:text-gray-500">{m.description}</p>}
                         <div className="flex flex-wrap gap-1 mt-0.5">
-                          {m.calories && <span className="text-xs text-orange-500">🔥 {m.calories}</span>}
+                          {m.calories && <span className="text-xs text-orange-500">kcal {m.calories}</span>}
                           {m.protein  && <span className="text-xs text-blue-500 ml-1">P {m.protein}g</span>}
                           {m.carbs    && <span className="text-xs text-amber-500 ml-1">C {m.carbs}g</span>}
                           {m.fat      && <span className="text-xs text-green-500 ml-1">F {m.fat}g</span>}
                         </div>
                         {m.ingredients?.length > 0 && (
-                          <p className="text-xs text-sage-300 dark:text-gray-600 mt-0.5">📋 {m.ingredients.join(', ')}</p>
+                          <p className="text-xs text-sage-300 dark:text-gray-600 mt-0.5">{m.ingredients.join(', ')}</p>
                         )}
                       </div>
                     </div>
@@ -183,7 +225,6 @@ function MealPlanCard({ data }) {
 // Clickable custom meal card — shows full details in a modal
 function CustomMealCard({ data }) {
   const [open, setOpen] = React.useState(false);
-  const CAT_EMOJI = { breakfast:'🍳', lunch:'🥙', dinner:'🍲', snack:'🍎', beverage:'🥤', other:'🍽️' };
 
   return (
     <>
@@ -193,7 +234,11 @@ function CustomMealCard({ data }) {
         className="w-full text-left mt-1 p-3 bg-white dark:bg-gray-700 border border-sage-100 dark:border-gray-600 rounded-xl hover:border-sage-300 dark:hover:border-gray-500 hover:shadow-sm transition-all group"
       >
         <div className="flex items-center gap-3">
-          <span className="text-2xl">{CAT_EMOJI[data.category] || '🍽️'}</span>
+          <FoodCategoryIcon
+            category={toFoodCategory(data.category)}
+            className="h-7 w-7 text-sage-600 dark:text-sage-300"
+            strokeWidth={1.9}
+          />
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sage-800 dark:text-gray-200 group-hover:text-sage-600 dark:group-hover:text-white transition-colors">
               {data.name}
@@ -202,7 +247,7 @@ function CustomMealCard({ data }) {
               <p className="text-xs text-sage-500 dark:text-gray-400 mt-0.5 line-clamp-1">{data.description}</p>
             )}
             <div className="flex flex-wrap gap-1.5 mt-1.5">
-              {data.calories && <span className="text-xs bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full">🔥 {data.calories} kcal</span>}
+              {data.calories && <span className="text-xs bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full">kcal {data.calories}</span>}
               {data.protein  && <span className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">P {data.protein}g</span>}
               {data.carbs    && <span className="text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full">C {data.carbs}g</span>}
               {data.fat      && <span className="text-xs bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full">F {data.fat}g</span>}
@@ -211,7 +256,7 @@ function CustomMealCard({ data }) {
           <span className="text-xs font-medium text-sage-400 dark:text-gray-500 group-hover:text-sage-600 dark:group-hover:text-gray-300 flex-shrink-0 border border-sage-200 dark:border-gray-600 rounded-lg px-2 py-1 transition-colors">View</span>
         </div>
         {data.ingredients?.length > 0 && (
-          <p className="text-xs text-sage-400 dark:text-gray-500 mt-2 line-clamp-1">📋 {data.ingredients.join(', ')}</p>
+          <p className="text-xs text-sage-400 dark:text-gray-500 mt-2 line-clamp-1">{data.ingredients.join(', ')}</p>
         )}
       </button>
 
@@ -222,13 +267,19 @@ function CustomMealCard({ data }) {
             {/* Header */}
             <div className="sticky top-0 bg-white dark:bg-gray-900 px-5 py-4 border-b border-sage-100 dark:border-gray-800 flex items-center justify-between rounded-t-2xl">
               <div className="flex items-center gap-3">
-                <span className="text-3xl">{CAT_EMOJI[data.category] || '🍽️'}</span>
+                <FoodCategoryIcon
+                  category={toFoodCategory(data.category)}
+                  className="h-8 w-8 text-sage-600 dark:text-sage-300"
+                  strokeWidth={1.9}
+                />
                 <div>
                   <h3 className="font-display text-lg font-semibold text-sage-900 dark:text-white">{data.name}</h3>
                   {data.serving && <p className="text-xs text-sage-400 dark:text-gray-500">Per {data.serving}</p>}
                 </div>
               </div>
-              <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full bg-sage-100 dark:bg-gray-800 flex items-center justify-center text-sage-600 dark:text-gray-400 hover:bg-sage-200 dark:hover:bg-gray-700 flex-shrink-0">✕</button>
+              <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full bg-sage-100 dark:bg-gray-800 flex items-center justify-center text-sage-600 dark:text-gray-400 hover:bg-sage-200 dark:hover:bg-gray-700 flex-shrink-0">
+                <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+              </button>
             </div>
 
             <div className="p-5 space-y-4">
@@ -312,7 +363,10 @@ function PostData({ type, data }) {
     <div className="mt-2 p-3 bg-sage-50 dark:bg-gray-800 rounded-xl text-sm space-y-1.5">
       {type === 'weight_update' && (
         <>
-          <p className="font-semibold text-sage-800 dark:text-gray-200">⚖️ Weight: {data.weight} kg</p>
+          <p className="font-semibold text-sage-800 dark:text-gray-200 inline-flex items-center gap-1.5">
+            <Scale className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+            Weight: {data.weight} kg
+          </p>
           {data.change && <p className="text-xs text-sage-500 dark:text-gray-400">{data.change > 0 ? `+${data.change}` : data.change} kg change</p>}
         </>
       )}
@@ -321,7 +375,10 @@ function PostData({ type, data }) {
       {type === 'custom_meal' && <CustomMealCard data={data} />}
       {type === 'calorie_log' && (
         <>
-          <p className="font-semibold text-sage-800 dark:text-gray-200">🔥 {data.calories} kcal today</p>
+          <p className="font-semibold text-sage-800 dark:text-gray-200 inline-flex items-center gap-1.5">
+            <Flame className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+            {data.calories} kcal today
+          </p>
           {data.goal && <p className="text-xs text-sage-500 dark:text-gray-400">Goal: {data.goal} kcal</p>}
           {data.meals?.length > 0 && (
             <p className="text-xs text-sage-400 dark:text-gray-500 mt-1">Meals: {data.meals.join(', ')}</p>
@@ -330,19 +387,40 @@ function PostData({ type, data }) {
       )}
       {type === 'workout_log' && (
         <>
-          <p className="font-semibold text-sage-800 dark:text-gray-200">🏋️ {data.workout}</p>
+          <p className="font-semibold text-sage-800 dark:text-gray-200 inline-flex items-center gap-1.5">
+            <Dumbbell className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+            {data.workout}
+          </p>
           <div className="flex flex-wrap gap-2 mt-1">
-            {data.duration  && <span className="text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full">⏱ {data.duration} min</span>}
-            {data.calories  && <span className="text-xs bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full">🔥 {data.calories} kcal</span>}
+            {data.duration  && (
+              <span className="text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                <Clock3 className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                {data.duration} min
+              </span>
+            )}
+            {data.calories  && (
+              <span className="text-xs bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                <Flame className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                {data.calories} kcal
+              </span>
+            )}
             {data.intensity && <span className="text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full capitalize">{data.intensity}</span>}
           </div>
         </>
       )}
       {type === 'progress_update' && (
         <>
-          <p className="font-semibold text-sage-800 dark:text-gray-200">📈 Progress Update</p>
+          <p className="font-semibold text-sage-800 dark:text-gray-200 inline-flex items-center gap-1.5">
+            <TrendingUp className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+            Progress Update
+          </p>
           <div className="flex flex-wrap gap-2 mt-1">
-            {data.weight      && <span className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">⚖️ {data.weight} kg</span>}
+            {data.weight      && (
+              <span className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                <Scale className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                {data.weight} kg
+              </span>
+            )}
             {data.bodyFat     && <span className="text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full">Body fat: {data.bodyFat}%</span>}
             {data.muscleMass  && <span className="text-xs bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full">Muscle: {data.muscleMass} kg</span>}
           </div>
@@ -439,6 +517,7 @@ function CommentItem({ comment, postId, currentUserId, postOwnerId, onDeleted, o
 
 function PostCard({ post, currentUserId, onDeleted }) {
   const meta = POST_TYPE_META[post.type] || POST_TYPE_META.progress_update;
+  const MetaIcon = meta.icon;
   const [liked,       setLiked]       = React.useState(post.likes?.includes(currentUserId));
   const [likeCount,   setLikeCount]   = React.useState(post.likes?.length || 0);
   const [showComments,setShowComments]= React.useState(false);
@@ -484,13 +563,18 @@ function PostCard({ post, currentUserId, onDeleted }) {
           <div>
             <p className="font-semibold text-sage-900 dark:text-white text-sm">{post.user?.name}</p>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${meta.color}`}>{meta.icon} {meta.label}</span>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${meta.color} inline-flex items-center gap-1`}>
+                <MetaIcon className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                {meta.label}
+              </span>
               <span className="text-xs text-sage-400 dark:text-gray-500">{timeAgo(post.createdAt)}</span>
             </div>
           </div>
         </div>
         {isOwner && (
-          <button onClick={handleDelete} className="text-sage-300 dark:text-gray-600 hover:text-red-400 transition-colors text-sm flex-shrink-0">🗑️</button>
+          <button onClick={handleDelete} className="text-sage-300 dark:text-gray-600 hover:text-red-400 transition-colors text-sm flex-shrink-0">
+            <Trash2 className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+          </button>
         )}
       </div>
 
@@ -502,11 +586,13 @@ function PostCard({ post, currentUserId, onDeleted }) {
       <div className="flex items-center gap-4 mt-3 pt-3 border-t border-sage-50 dark:border-gray-800">
         <button onClick={handleLike}
           className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${liked ? 'text-red-500' : 'text-sage-400 dark:text-gray-500 hover:text-red-400'}`}>
-          {liked ? '❤️' : '🤍'} {likeCount}
+          <Heart className={`h-4 w-4 ${liked ? 'fill-current' : ''}`} strokeWidth={2} aria-hidden="true" />
+          {likeCount}
         </button>
         <button onClick={() => setShowComments(s => !s)}
           className="flex items-center gap-1.5 text-sm font-medium text-sage-400 dark:text-gray-500 hover:text-sage-600 dark:hover:text-gray-300 transition-colors">
-          💬 {comments.length}
+          <MessageCircle className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+          {comments.length}
         </button>
       </div>
 
@@ -562,7 +648,9 @@ function ShareForm({ onClose, onPosted }) {
       <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md shadow-2xl animate-fadeIn" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-sage-100 dark:border-gray-800">
           <h3 className="font-display text-lg font-semibold text-sage-900 dark:text-white">Share Update</h3>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-sage-100 dark:bg-gray-800 flex items-center justify-center text-sage-600 dark:text-gray-400 hover:bg-sage-200 dark:hover:bg-gray-700">✕</button>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-sage-100 dark:bg-gray-800 flex items-center justify-center text-sage-600 dark:text-gray-400 hover:bg-sage-200 dark:hover:bg-gray-700">
+            <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+          </button>
         </div>
         <div className="p-5 space-y-4">
           {/* Type selector */}
@@ -615,7 +703,14 @@ function ShareForm({ onClose, onPosted }) {
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <button onClick={handlePost} disabled={posting} className="btn-primary w-full flex items-center justify-center gap-2">
-            {posting ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Posting...</> : '📤 Share with Friends'}
+            {posting ? (
+              <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Posting...</>
+            ) : (
+              <>
+                <Send className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                Share with Friends
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -663,21 +758,30 @@ export default function Feed() {
           <p className="text-sage-600 dark:text-gray-400 text-sm mt-0.5">Share your progress with friends</p>
         </div>
         <div className="flex items-center gap-2">
-          <Link to="/messages" className="btn-secondary text-sm py-2 px-3">💬 Messages</Link>
-          <Link to="/friends"  className="btn-secondary text-sm py-2 px-3">👥 Friends</Link>
-          <button onClick={() => setShowShare(true)} className="btn-primary text-sm py-2 px-4">+ Share</button>
+          <Link to="/messages" className="btn-secondary text-sm py-2 px-3 inline-flex items-center gap-1.5">
+            <MessageCircle className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+            Messages
+          </Link>
+          <Link to="/friends"  className="btn-secondary text-sm py-2 px-3 inline-flex items-center gap-1.5">
+            <Users className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+            Friends
+          </Link>
+          <button onClick={() => setShowShare(true)} className="btn-primary text-sm py-2 px-4 inline-flex items-center gap-1.5">
+            <Send className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+            Share
+          </button>
         </div>
       </div>
 
       {/* Posts */}
       {loading ? (
         <div className="card text-center py-12">
-          <div className="loading-pulse text-4xl mb-3">🌿</div>
+          <UtensilsCrossed className="loading-pulse h-10 w-10 text-sage-500 dark:text-sage-400 mx-auto mb-3" strokeWidth={1.9} aria-hidden="true" />
           <p className="text-sage-500 dark:text-gray-400">Loading feed...</p>
         </div>
       ) : posts.length === 0 ? (
         <div className="card text-center py-12">
-          <div className="text-5xl mb-3">👥</div>
+          <MessageCircle className="h-12 w-12 text-sage-500 dark:text-sage-400 mx-auto mb-3" strokeWidth={1.9} aria-hidden="true" />
           <p className="font-medium text-sage-700 dark:text-gray-300 mb-1">Nothing here yet</p>
           <p className="text-sage-400 dark:text-gray-500 text-sm">Add friends and share your progress to get started!</p>
           <Link to="/friends" className="btn-primary mt-4 inline-block">Find Friends</Link>

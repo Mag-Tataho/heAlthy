@@ -12,12 +12,12 @@ import SetNewPassword from './pages/SetNewPassword';
 import ResetPasswordSuccess from './pages/ResetPasswordSuccess';
 import Dashboard      from './pages/Dashboard';
 import Profile        from './pages/Profile';
+import Upgrade        from './pages/Upgrade';
 import MealPlans      from './pages/MealPlans';
 import MealPlanDetail from './pages/MealPlanDetail';
 import Progress       from './pages/Progress';
 import Chat           from './pages/Chat';
 import FoodSearch     from './pages/FoodSearch';
-import Settings       from './pages/Settings';
 import CustomMeals    from './pages/CustomMeals';
 import Friends        from './pages/Friends';
 import Feed           from './pages/Feed';
@@ -57,12 +57,13 @@ function AppRoutes() {
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route path="dashboard"       element={<Dashboard />} />
         <Route path="profile"         element={<Profile />} />
+        <Route path="upgrade"         element={<Upgrade />} />
         <Route path="meal-plans"      element={<MealPlans />} />
         <Route path="meal-plans/:id"  element={<MealPlanDetail />} />
         <Route path="progress"        element={<Progress />} />
         <Route path="chat"            element={<Chat />} />
         <Route path="food-search"     element={<FoodSearch />} />
-        <Route path="settings"        element={<Settings />} />
+        <Route path="settings"        element={<Navigate to="/profile" replace />} />
         <Route path="custom-meals"    element={<CustomMeals />} />
         <Route path="friends"         element={<Friends />} />
         <Route path="feed"            element={<Feed />} />

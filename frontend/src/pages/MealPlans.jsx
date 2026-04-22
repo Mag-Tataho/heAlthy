@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { Bot, Share2, Sparkles, Trash2, UtensilsCrossed } from '../components/OpenMojiIcons';
 import api from '../utils/api';
 
 const GOAL_OPTIONS = ['lose_weight','maintain','gain_muscle','improve_health'];
@@ -13,10 +14,13 @@ function SharePanel({ plan, onShare, onCancel }) {
   useEffect(() => { ref.current?.focus(); }, []);
   return (
     <div className="mt-4 pt-4 border-t border-sage-100 dark:border-gray-800 animate-fadeIn">
-      <p className="text-sm font-medium text-sage-700 dark:text-gray-300 mb-2">📤 Share to friends feed</p>
+      <p className="text-sm font-medium text-sage-700 dark:text-gray-300 mb-2 inline-flex items-center gap-2">
+        <Share2 className="h-4 w-4" aria-hidden="true" />
+        Share to friends feed
+      </p>
       <textarea ref={ref} value={msg} onChange={e => setMsg(e.target.value)}
         className="input-field text-sm resize-none mb-2" rows={2}
-        placeholder={`Check out my ${plan.title}! 🥗`} maxLength={300} />
+        placeholder={`Check out my ${plan.title}!`} maxLength={300} />
       <div className="flex gap-2">
         <button onClick={() => onShare(plan, msg)} className="btn-primary text-sm py-2 flex-1">Share Now</button>
         <button onClick={onCancel} className="btn-secondary text-sm py-2">Cancel</button>
@@ -101,12 +105,12 @@ export default function MealPlans() {
 
       await api.post('/social/post', {
         type:       'meal_plan',
-        content:    msg || `Check out my ${plan.title}! 🥗`,
+        content:    msg || `Check out my ${plan.title}!`,
         data:       shareData,
         visibility: 'friends',
       });
       setShareId(null);
-      alert('Shared to your friends feed! 🎉');
+      alert('Shared to your friends feed!');
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to share');
     }
@@ -121,8 +125,9 @@ export default function MealPlans() {
 
       {/* Generate card */}
       <div className="card animate-fadeIn">
-        <h2 className="font-display text-lg font-semibold text-sage-800 dark:text-white mb-4">
-          {user?.isPremium ? '✨ Generate Personalized Plan' : '🥗 Generate 1-Day Meal Plan'}
+        <h2 className="font-display text-lg font-semibold text-sage-800 dark:text-white mb-4 inline-flex items-center gap-2">
+          {user?.isPremium ? <Sparkles className="h-5 w-5" aria-hidden="true" /> : <UtensilsCrossed className="h-5 w-5" aria-hidden="true" />}
+          {user?.isPremium ? 'Generate Personalized Plan' : 'Generate 1-Day Meal Plan'}
         </h2>
         {!user?.isPremium ? (
           /* Free: goal selector, always 1-day */
@@ -167,27 +172,31 @@ export default function MealPlans() {
         )}
         {error && <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 text-sm">{error}</div>}
         <button onClick={handleGenerate} disabled={generating} className="btn-primary w-full flex items-center justify-center gap-2">
-          {generating ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Generating... (may take 15–20s)</> : '🤖 Generate Meal Plan'}
+          {generating ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Generating... (may take 15–20s)</> : <><Bot className="h-4 w-4" aria-hidden="true" />Generate Meal Plan</>}
         </button>
         {!user?.isPremium && (
           <p className="text-xs text-center text-sage-400 dark:text-gray-500 mt-2">
-            Free: 1-day plan · <Link to="/settings" className="underline">Upgrade to Premium</Link> for 7-day plans
+            Free: 1-day plan · <Link to="/profile" className="underline">Upgrade to Premium</Link> for 7-day plans
           </p>
         )}
       </div>
 
       {/* Plans list */}
       {loading ? (
-        <div className="card text-center py-10"><div className="loading-pulse text-4xl mb-3">🥗</div><p className="text-sage-500 dark:text-gray-400">Loading...</p></div>
+        <div className="card text-center py-10"><UtensilsCrossed className="loading-pulse h-10 w-10 mx-auto mb-3" aria-hidden="true" /><p className="text-sage-500 dark:text-gray-400">Loading...</p></div>
       ) : plans.length === 0 ? (
-        <div className="card text-center py-10"><div className="text-5xl mb-3">🍽️</div><p className="font-medium text-sage-700 dark:text-gray-300">No meal plans yet</p><p className="text-sage-400 dark:text-gray-500 text-sm mt-1">Generate your first plan above!</p></div>
+        <div className="card text-center py-10"><UtensilsCrossed className="h-12 w-12 mx-auto mb-3" aria-hidden="true" /><p className="font-medium text-sage-700 dark:text-gray-300 mb-1">No meal plans yet</p><p className="text-sage-400 dark:text-gray-500 text-sm mt-1">Generate your first plan above!</p></div>
       ) : (
         <div className="space-y-3 stagger-children">
           {plans.map(plan => (
             <div key={plan._id} className="card hover:shadow-md transition-all duration-200">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <span className="text-2xl flex-shrink-0">{plan.type === 'personalized' ? '⭐' : '🥗'}</span>
+                  {plan.type === 'personalized' ? (
+                    <Sparkles className="h-6 w-6 flex-shrink-0" aria-hidden="true" />
+                  ) : (
+                    <UtensilsCrossed className="h-6 w-6 flex-shrink-0" aria-hidden="true" />
+                  )}
                   <div className="min-w-0">
                     <p className="font-medium text-sage-900 dark:text-white truncate">{plan.title}</p>
                     <p className="text-xs text-sage-400 dark:text-gray-500 mt-0.5">
@@ -200,11 +209,11 @@ export default function MealPlans() {
                   <Link to={`/meal-plans/${plan._id}`} className="btn-secondary text-xs py-1.5 px-3">View</Link>
                   <button onClick={() => setShareId(shareId === plan._id ? null : plan._id)}
                     className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-colors ${shareId === plan._id ? 'bg-blue-200 dark:bg-blue-800 text-blue-700' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/40'}`}>
-                    📤
+                    <Share2 className="h-4 w-4" aria-hidden="true" />
                   </button>
                   <button onClick={() => setDeleteId(plan._id)}
                     className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-400 hover:bg-red-100 flex items-center justify-center text-sm transition-colors">
-                    🗑️
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -220,7 +229,7 @@ export default function MealPlans() {
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fadeIn">
-            <div className="text-4xl text-center mb-3">🗑️</div>
+            <Trash2 className="h-10 w-10 mx-auto mb-3" aria-hidden="true" />
             <h3 className="font-display text-lg font-semibold text-center text-sage-900 dark:text-white mb-2">Delete Meal Plan?</h3>
             <p className="text-sage-600 dark:text-gray-400 text-sm text-center mb-5">This cannot be undone.</p>
             <div className="flex gap-3">

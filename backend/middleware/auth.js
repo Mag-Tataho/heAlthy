@@ -8,7 +8,7 @@ const auth = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     // Populate friends so friend routes work correctly
-    const user = await User.findById(decoded.id).populate('friends', 'name email isPremium');
+    const user = await User.findById(decoded.id).populate('friends', 'name email isPremium avatarUrl');
 
     if (!user) return res.status(401).json({ error: 'User not found' });
 
@@ -31,4 +31,12 @@ const premiumAuth = async (req, res, next) => {
   });
 };
 
-module.exports = { auth, premiumAuth };
+const requirePremium = (req, res, next) => {
+  if (!req.user?.isPremium) {
+    return res.status(403).json({ error: 'Premium required', upgrade: true });
+  }
+
+  return next();
+};
+
+module.exports = { auth, premiumAuth, requirePremium };

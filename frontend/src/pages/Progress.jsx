@@ -4,6 +4,21 @@ import {
   ResponsiveContainer, BarChart, Bar, Legend,
 } from 'recharts';
 import { useAuth } from '../context/AuthContext';
+import { TrendingDown, TrendingUp, Target, Circle as CircleIcon } from '../components/OpenMojiIcons';
+import {
+  Activity,
+  ArrowRight,
+  ChartNoAxesColumn,
+  Check,
+  Droplets,
+  Flame,
+  Lightbulb,
+  MessageCircle,
+  Pencil,
+  Scale,
+  Trash2,
+  UtensilsCrossed,
+} from '../components/OpenMojiIcons';
 import api from '../utils/api';
 
 const today = new Date().toISOString().split('T')[0];
@@ -175,7 +190,7 @@ export default function Progress() {
       {/* Daily Quote */}
       <div className="card bg-gradient-to-br from-sage-50 to-white dark:from-gray-800 dark:to-gray-900 border-sage-200 animate-fadeIn">
         <div className="flex items-start gap-3">
-          <span className="text-2xl">💬</span>
+          <MessageCircle className="h-6 w-6 mt-0.5 flex-shrink-0" aria-hidden="true" />
           <div>
             <p className="text-sm font-medium text-sage-800 dark:text-gray-200 italic">"{quote.text}"</p>
             <p className="text-xs text-sage-400 dark:text-gray-500 mt-1">— {quote.author}</p>
@@ -188,22 +203,34 @@ export default function Progress() {
         {/* Streak */}
         <div className="card text-center py-4">
           <p className="text-3xl font-bold text-sage-700 dark:text-white">{streak}</p>
-          <p className="text-xs text-sage-500 dark:text-gray-400 mt-1">🔥 Day Streak</p>
+          <p className="text-xs text-sage-500 dark:text-gray-400 mt-1 inline-flex items-center justify-center gap-1.5">
+            <Flame className="h-3.5 w-3.5" aria-hidden="true" />
+            Day Streak
+          </p>
         </div>
         {/* Avg calories */}
         <div className="card text-center py-4">
           <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">{avg('calories') || '—'}</p>
-          <p className="text-xs text-sage-500 dark:text-gray-400 mt-1">🍽️ Avg Calories (7d)</p>
+          <p className="text-xs text-sage-500 dark:text-gray-400 mt-1 inline-flex items-center justify-center gap-1.5">
+            <UtensilsCrossed className="h-3.5 w-3.5" aria-hidden="true" />
+            Avg Calories (7d)
+          </p>
         </div>
         {/* Latest weight */}
         <div className="card text-center py-4">
           <p className="text-3xl font-bold text-sage-700 dark:text-white">{latestEntry?.weight || '—'}</p>
-          <p className="text-xs text-sage-500 dark:text-gray-400 mt-1">⚖️ Latest Weight (kg)</p>
+          <p className="text-xs text-sage-500 dark:text-gray-400 mt-1 inline-flex items-center justify-center gap-1.5">
+            <Scale className="h-3.5 w-3.5" aria-hidden="true" />
+            Latest Weight (kg)
+          </p>
         </div>
         {/* Avg water */}
         <div className="card text-center py-4">
           <p className="text-3xl font-bold text-blue-500 dark:text-blue-400">{avg('water') || '—'}</p>
-          <p className="text-xs text-sage-500 dark:text-gray-400 mt-1">💧 Avg Water (7d)</p>
+          <p className="text-xs text-sage-500 dark:text-gray-400 mt-1 inline-flex items-center justify-center gap-1.5">
+            <Droplets className="h-3.5 w-3.5" aria-hidden="true" />
+            Avg Water (7d)
+          </p>
         </div>
       </div>
 
@@ -214,9 +241,13 @@ export default function Progress() {
           prediction.trend === 'gaining' ? 'border-l-amber-500' : 'border-l-blue-400'
         }`}>
           <div className="flex items-start gap-3">
-            <span className="text-2xl">
-              {prediction.trend === 'losing' ? '📉' : prediction.trend === 'gaining' ? '📈' : '➡️'}
-            </span>
+            {prediction.trend === 'losing' ? (
+              <TrendingDown className="h-6 w-6 mt-0.5 flex-shrink-0 text-green-500" aria-hidden="true" />
+            ) : prediction.trend === 'gaining' ? (
+              <TrendingUp className="h-6 w-6 mt-0.5 flex-shrink-0 text-amber-500" aria-hidden="true" />
+            ) : (
+              <ArrowRight className="h-6 w-6 mt-0.5 flex-shrink-0 text-blue-500" aria-hidden="true" />
+            )}
             <div className="flex-1">
               <h3 className="font-semibold text-sage-800 dark:text-white text-sm mb-1">Weight Prediction</h3>
               <p className="text-sm text-sage-600 dark:text-gray-300">
@@ -226,14 +257,16 @@ export default function Progress() {
                 {prediction.trend !== 'stable' && ` based on your last ${entries.filter(e=>e.weight).slice(0,14).length} weigh-ins.`}
               </p>
               {prediction.goalText && p.targetWeight && (
-                <p className="text-sm text-sage-500 dark:text-gray-400 mt-1">
-                  🎯 At this rate, you'll reach your target of <strong>{p.targetWeight} kg</strong> around <strong className="text-sage-700 dark:text-sage-300">{prediction.goalText}</strong>
+                <p className="text-sm text-sage-500 dark:text-gray-400 mt-1 inline-flex items-start gap-1.5">
+                  <Target className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                  At this rate, you'll reach your target of <strong>{p.targetWeight} kg</strong> around <strong className="text-sage-700 dark:text-sage-300">{prediction.goalText}</strong>
                   {prediction.daysToGoal && ` (~${prediction.daysToGoal} days)`}.
                 </p>
               )}
               {!p.targetWeight && (
-                <p className="text-xs text-sage-400 dark:text-gray-500 mt-1">
-                  💡 Set a target weight in your Profile to see your goal prediction.
+                <p className="text-xs text-sage-400 dark:text-gray-500 mt-1 inline-flex items-start gap-1.5">
+                  <Lightbulb className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                  Set a target weight in your Profile to see your goal prediction.
                 </p>
               )}
             </div>
@@ -243,7 +276,10 @@ export default function Progress() {
 
       {/* Log Form */}
       <div className="card animate-fadeIn">
-        <h2 className="font-display text-lg font-semibold text-sage-800 dark:text-white mb-4">📝 Log Today's Data</h2>
+        <h2 className="font-display text-lg font-semibold text-sage-800 dark:text-white mb-4 inline-flex items-center gap-2">
+          <Pencil className="h-5 w-5" aria-hidden="true" />
+          Log Today's Data
+        </h2>
         <form onSubmit={handleSubmit}>
           {/* Body metrics */}
           <div className="mb-2">
@@ -279,19 +315,28 @@ export default function Progress() {
             <p className="text-xs font-semibold text-sage-400 dark:text-gray-500 uppercase tracking-wide mb-3">Macros (g)</p>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="label">🔵 Protein (g)</label>
+                <label className="label inline-flex items-center gap-1.5">
+                  <CircleIcon className="h-3.5 w-3.5 text-blue-500" aria-hidden="true" />
+                  Protein (g)
+                </label>
                 <input type="number" step="0.1" value={form.protein}
                   onChange={e => setForm({...form, protein: e.target.value})}
                   className="input-field" placeholder="e.g. 120" />
               </div>
               <div>
-                <label className="label">🟡 Carbs (g)</label>
+                <label className="label inline-flex items-center gap-1.5">
+                  <CircleIcon className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
+                  Carbs (g)
+                </label>
                 <input type="number" step="0.1" value={form.carbs}
                   onChange={e => setForm({...form, carbs: e.target.value})}
                   className="input-field" placeholder="e.g. 200" />
               </div>
               <div>
-                <label className="label">🟢 Fat (g)</label>
+                <label className="label inline-flex items-center gap-1.5">
+                  <CircleIcon className="h-3.5 w-3.5 text-green-500" aria-hidden="true" />
+                  Fat (g)
+                </label>
                 <input type="number" step="0.1" value={form.fat}
                   onChange={e => setForm({...form, fat: e.target.value})}
                   className="input-field" placeholder="e.g. 55" />
@@ -301,7 +346,10 @@ export default function Progress() {
 
           {/* Workout */}
           <div className="border-t border-sage-100 dark:border-gray-700 pt-4 mt-4 mb-4">
-            <p className="text-xs font-semibold text-sage-400 dark:text-gray-500 uppercase tracking-wide mb-3">🏃 Workout (optional)</p>
+            <p className="text-xs font-semibold text-sage-400 dark:text-gray-500 uppercase tracking-wide mb-3 inline-flex items-center gap-1.5">
+              <Activity className="h-3.5 w-3.5" aria-hidden="true" />
+              Workout (optional)
+            </p>
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="label">Activity type</label>
@@ -334,7 +382,10 @@ export default function Progress() {
 
           {success && (
             <div className="mb-3 p-3 bg-sage-50 dark:bg-gray-800 border border-sage-300 dark:border-gray-700 rounded-xl text-sage-700 dark:text-gray-300 text-sm text-center">
-              ✅ Progress logged! Keep it up! 💪
+              <span className="inline-flex items-center justify-center gap-2">
+                <Check className="h-4 w-4" aria-hidden="true" />
+                Progress logged! Keep it up!
+              </span>
             </div>
           )}
           {error && (
@@ -344,7 +395,7 @@ export default function Progress() {
           )}
 
           <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2">
-            {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Saving...</> : '📊 Log Progress'}
+            {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Saving...</> : <><ChartNoAxesColumn className="h-4 w-4" aria-hidden="true" />Log Progress</>}
           </button>
         </form>
       </div>
@@ -415,7 +466,8 @@ export default function Progress() {
                   </p>
                   {entry.workout?.type && (
                     <p className="text-xs text-sage-500 dark:text-gray-500 mt-0.5">
-                      🏃 {entry.workout.type}{entry.workout.duration && ` · ${entry.workout.duration}min`}
+                      <Activity className="inline h-3.5 w-3.5 mr-1.5 align-[-0.125em]" aria-hidden="true" />
+                      {entry.workout.type}{entry.workout.duration && ` · ${entry.workout.duration}min`}
                       {entry.workout.caloriesBurned && ` · ${entry.workout.caloriesBurned} cal burned`}
                     </p>
                   )}
@@ -433,11 +485,14 @@ export default function Progress() {
                   <div className="flex gap-3 text-sm">
                     {entry.weight   && <span className="text-sage-700 dark:text-gray-300 font-medium">{entry.weight} kg</span>}
                     {entry.calories && <span className="text-amber-600 dark:text-amber-400 font-medium">{entry.calories} cal</span>}
-                    {entry.water    && <span className="text-blue-500 font-medium">{entry.water} 💧</span>}
+                    {entry.water    && <span className="text-blue-500 font-medium inline-flex items-center gap-1">
+                      <Droplets className="h-3.5 w-3.5" aria-hidden="true" />
+                      {entry.water}
+                    </span>}
                   </div>
                   <button onClick={() => handleDelete(entry._id)} disabled={deletingId === entry._id}
                     className="text-xs text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors mt-1">
-                    {deletingId === entry._id ? '...' : '🗑 Delete'}
+                    {deletingId === entry._id ? '...' : <span className="inline-flex items-center gap-1"><Trash2 className="h-3.5 w-3.5" aria-hidden="true" />Delete</span>}
                   </button>
                 </div>
               </div>
@@ -448,7 +503,7 @@ export default function Progress() {
 
       {entries.length === 0 && !loading && (
         <div className="card text-center py-12 animate-fadeIn">
-          <span className="text-5xl block mb-3">📊</span>
+          <ChartNoAxesColumn className="h-12 w-12 mx-auto mb-3" aria-hidden="true" />
           <p className="font-medium text-sage-700 dark:text-gray-300 mb-1">No entries yet</p>
           <p className="text-sm text-sage-400 dark:text-gray-500">Start logging above to see your progress here</p>
         </div>

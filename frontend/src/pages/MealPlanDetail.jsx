@@ -2,6 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Leaf,
+  ShoppingCart,
+  Sparkles,
+  UtensilsCrossed,
+} from '../components/OpenMojiIcons';
 
 const MacroBadge = ({ protein, carbs, fat, calories }) => (
   <div className="flex flex-wrap gap-2 text-xs">
@@ -55,7 +65,7 @@ const MealCard = ({ meal }) => {
           {meal.calories && (
             <span className="text-sm font-medium text-sage-600 dark:text-gray-300">{meal.calories} cal</span>
           )}
-          <span className="text-sage-400">{open ? '▲' : '▼'}</span>
+          {open ? <ChevronUp className="h-4 w-4 text-sage-400" aria-hidden="true" /> : <ChevronDown className="h-4 w-4 text-sage-400" aria-hidden="true" />}
         </div>
       </button>
 
@@ -86,7 +96,10 @@ const MealCard = ({ meal }) => {
 
           {/* Cooking Procedure */}
           <div className="bg-sage-50 dark:bg-gray-700/50 rounded-xl p-4">
-            <p className="text-xs font-semibold text-sage-500 dark:text-gray-400 uppercase tracking-wide mb-3">👨‍🍳 How to Cook</p>
+            <p className="text-xs font-semibold text-sage-500 dark:text-gray-400 uppercase tracking-wide mb-3 inline-flex items-center gap-1.5">
+              <UtensilsCrossed className="h-3.5 w-3.5" aria-hidden="true" />
+              How to Cook
+            </p>
             {loadingSteps ? (
               <div className="flex items-center gap-2 text-sm text-sage-400 dark:text-gray-500">
                 <div className="w-4 h-4 border-2 border-sage-400 border-t-transparent rounded-full animate-spin" />
@@ -153,7 +166,10 @@ export default function MealPlanDetail() {
     return (
       <div className="text-center py-16">
         <p className="text-red-500 mb-4">{error}</p>
-        <Link to="/meal-plans" className="btn-secondary">← Back to Plans</Link>
+        <Link to="/meal-plans" className="btn-secondary inline-flex items-center gap-1">
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back to Plans
+        </Link>
       </div>
     );
 
@@ -165,8 +181,9 @@ export default function MealPlanDetail() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <Link to="/meal-plans" className="text-sm text-sage-500 hover:text-sage-700 dark:text-gray-400 mb-2 block">
-            ← Back to Plans
+          <Link to="/meal-plans" className="text-sm text-sage-500 hover:text-sage-700 dark:text-gray-400 mb-2 inline-flex items-center gap-1">
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+            Back to Plans
           </Link>
           <h1 className="section-title">{plan.title || planDoc?.title}</h1>
           <div className="flex items-center gap-3 mt-2 text-sm text-sage-500 dark:text-gray-500">
@@ -177,8 +194,9 @@ export default function MealPlanDetail() {
             </span>
             {plan.totalCalories && <span>· ~{plan.totalCalories} cal/day</span>}
             {plan.totalCaloriesPerDay && <span>· ~{plan.totalCaloriesPerDay} cal/day</span>}
-            <span className={planDoc?.isPremium ? 'badge-premium' : 'badge-free'}>
-              {planDoc?.isPremium ? '✨ Premium' : '🌱 Free'}
+            <span className={`${planDoc?.isPremium ? 'badge-premium' : 'badge-free'} inline-flex items-center gap-1.5`}>
+              {planDoc?.isPremium ? <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> : <Leaf className="h-3.5 w-3.5" aria-hidden="true" />}
+              {planDoc?.isPremium ? 'Premium' : 'Free'}
             </span>
           </div>
         </div>
@@ -188,9 +206,12 @@ export default function MealPlanDetail() {
       {safeCustomMeals.length > 0 && (
         <div className="card bg-sage-50 dark:bg-gray-800 border-sage-200 dark:border-gray-700 animate-fadeIn">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg">🍽️</span>
+            <UtensilsCrossed className="h-5 w-5 text-sage-600 dark:text-sage-300" aria-hidden="true" />
             <h3 className="font-display font-semibold text-sage-800 dark:text-white text-sm">Your Custom Meals — Safe for You</h3>
-            <span className="ml-auto text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full">✓ Allergen checked</span>
+            <span className="ml-auto text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+              <Check className="h-3 w-3" aria-hidden="true" />
+              Allergen checked
+            </span>
           </div>
           <p className="text-xs text-sage-500 dark:text-gray-400 mb-3">These custom meals match your dietary needs and can replace meals in this plan:</p>
           <div className="flex flex-wrap gap-2">
@@ -239,10 +260,11 @@ export default function MealPlanDetail() {
             onClick={() => setShowGrocery(!showGrocery)}
             className="w-full flex items-center justify-between text-left"
           >
-            <h3 className="font-display text-lg font-semibold text-sage-800 dark:text-white">
-              🛒 Grocery List ({(planDoc?.groceryList || plan.groceryList)?.length} items)
+            <h3 className="font-display text-lg font-semibold text-sage-800 dark:text-white inline-flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" aria-hidden="true" />
+              Grocery List ({(planDoc?.groceryList || plan.groceryList)?.length} items)
             </h3>
-            <span className="text-sage-400">{showGrocery ? '▲' : '▼'}</span>
+            {showGrocery ? <ChevronUp className="h-4 w-4 text-sage-400" aria-hidden="true" /> : <ChevronDown className="h-4 w-4 text-sage-400" aria-hidden="true" />}
           </button>
           {showGrocery && (
             <div className="mt-4 animate-fadeIn">

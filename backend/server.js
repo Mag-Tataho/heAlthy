@@ -5,16 +5,27 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const app = express();
+const jsonParser = express.json({ limit: '10mb' });
+const origin = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
 
 // Middleware
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000', credentials: true }));
-app.use(express.json({ limit: '10mb' }));
+app.use(cors({ origin, credentials: true }));
+app.use((req, res, next) => {
+  if (req.originalUrl.startsWith('/api/payments/webhook')) {
+    return next();
+  }
+
+  return jsonParser(req, res, next);
+});
 
 // Global rate limit
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200, standardHeaders: true, legacyHeaders: false }));
 
 // Routes
 app.use('/api/auth',         require('./routes/auth'));
+app.use('/api/admin',        require('./routes/admin'));
+app.use('/api/payments',     require('./routes/payments'));
+app.use('/api/reports',      require('./routes/reports'));
 app.use('/api/profile',      require('./routes/profile'));
 app.use('/api/progress',     require('./routes/progress'));
 app.use('/api/food',         require('./routes/food'));

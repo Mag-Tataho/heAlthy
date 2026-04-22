@@ -34,8 +34,17 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
-  const register = async (name, email, password) => {
-    const { data } = await api.post('/auth/register', { name, email, password });
+  const requestSignupOtp = async (name, email, password) => {
+    const { data } = await api.post('/auth/request-signup-otp', { name, email, password });
+    return data;
+  };
+
+  const register = async ({ name, email, password, avatarUrl, profile, code }) => {
+    const payload = { name, email, password, code };
+    if (avatarUrl) payload.avatarUrl = avatarUrl;
+    if (profile) payload.profile = profile;
+
+    const { data } = await api.post('/auth/register', payload);
     localStorage.setItem('token', data.token);
     setUser(data.user);
     return data;
@@ -47,9 +56,10 @@ export const AuthProvider = ({ children }) => {
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
       const uid = currentUser?._id || currentUser?.id;
       if (uid) localStorage.removeItem(`healthy_chat_${uid}`);
+      if (uid) localStorage.removeItem(`healthy_premium_checkout_${uid}`);
       // fallback: clear any healthy_chat_ keys
       Object.keys(localStorage)
-        .filter(k => k.startsWith('healthy_chat_'))
+        .filter(k => k.startsWith('healthy_chat_') || k.startsWith('healthy_premium_checkout_'))
         .forEach(k => localStorage.removeItem(k));
     } catch {}
     localStorage.removeItem('token');
@@ -60,15 +70,40 @@ export const AuthProvider = ({ children }) => {
     setUser(updatedUser);
   };
 
-  const upgradeToPremiun = async () => {
-    const { data } = await api.put('/auth/upgrade');
-    setUser(data.user);
+  const startPremiumCheckout = async () => {
+    if (user?.isPremium) {
+      return { alreadyPremium: true, user };
+    }
+
+    const { data } = await api.post('/auth/premium/checkout');
+    if (data.user) {
+      setUser(data.user);
+    }
+    return data;
+  };
+
+  const confirmPremiumCheckout = async (checkoutSessionId) => {
+    const { data } = await api.post(`/auth/premium/checkout/${checkoutSessionId}/confirm`);
+    if (data.user) {
+      setUser(data.user);
+    }
     return data;
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, logout, updateUser, upgradeToPremiun }}
+      value={{
+        user,
+        loading,
+        login,
+        requestSignupOtp,
+        register,
+        logout,
+        updateUser,
+        startPremiumCheckout,
+        confirmPremiumCheckout,
+        upgradeToPremiun: startPremiumCheckout,
+      }}
     >
       {children}
     </AuthContext.Provider>

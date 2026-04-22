@@ -6,7 +6,7 @@ const groupSchema = new mongoose.Schema({
   creator:     { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   members:     [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   admins:      [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  emoji:       { type: String, default: '💪' },
+  emoji:       { type: String, default: 'Dumbbell' },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Group', groupSchema);

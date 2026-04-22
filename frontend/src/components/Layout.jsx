@@ -3,34 +3,58 @@ import { useTheme } from '../context/ThemeContext';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import BrandLogo from './BrandLogo';
+import {
+  Bot,
+  LogOut,
+  MessageCircle,
+  Newspaper,
+  Search,
+  TrendingUp,
+  Users,
+  UtensilsCrossed,
+  X,
+} from './OpenMojiIcons';
 
-// Desktop sidebar — all items
 const sidebarItems = [
-  { to: '/dashboard',    icon: '🏠', label: 'Dashboard' },
-  { to: '/feed',         icon: '📱', label: 'Friends Feed' },
-  { to: '/messages',     icon: '💬', label: 'Messages' },
-  { to: '/friends',      icon: '👥', label: 'Friends' },
-  { to: '/meal-plans',   icon: '🥗', label: 'Meal Plans' },
-  { to: '/custom-meals', icon: '🍽️', label: 'Custom Meals' },
-  { to: '/progress',     icon: '📈', label: 'Progress' },
-  { to: '/food-search',  icon: '🔍', label: 'Food Search' },
-  { to: '/chat',         icon: '💬', label: 'AI Chat', premium: true },
-  { to: '/profile',      icon: '👤', label: 'Profile' },
-  { to: '/settings',     icon: '⚙️', label: 'Settings' },
+  { to: '/feed',         icon: Newspaper,      label: 'Friends Feed' },
+  { to: '/messages',     icon: MessageCircle,  label: 'Messages' },
+  { to: '/friends',      icon: Users,          label: 'Friends' },
+  { to: '/meal-plans',   icon: UtensilsCrossed,label: 'Meal Plans' },
+  { to: '/custom-meals', icon: UtensilsCrossed,label: 'Custom Meals' },
+  { to: '/progress',     icon: TrendingUp,     label: 'Progress' },
+  { to: '/food-search',  icon: Search,         label: 'Food Search' },
+  { to: '/chat',         icon: Bot,            label: 'AI Chat', premium: true },
 ];
 
-// Mobile bottom nav — 5 most important items
 const bottomNavItems = [
-  { to: '/dashboard',  icon: '🏠', label: 'Home' },
-  { to: '/feed',       icon: '📱', label: 'Feed' },
-  { to: '/meal-plans', icon: '🥗', label: 'Meals' },
-  { to: '/progress',   icon: '📈', label: 'Progress' },
-  { to: '/profile',    icon: '👤', label: 'Profile' },
+  { to: '/feed',       icon: Newspaper,       label: 'Feed' },
+  { to: '/meal-plans', icon: UtensilsCrossed, label: 'Meals' },
+  { to: '/progress',   icon: TrendingUp,      label: 'Progress' },
+  { to: '/friends',    icon: Users,           label: 'Friends' },
+  { to: '/chat',       icon: Bot,             label: 'AI', premium: true },
 ];
+
+function UserAvatar({ user, sizeClass = 'w-9 h-9' }) {
+  if (user?.avatarUrl) {
+    return (
+      <img
+        src={user.avatarUrl}
+        alt={`${user?.name || 'User'} profile`}
+        className={`${sizeClass} rounded-full object-cover border border-sage-200 dark:border-gray-700 bg-white`}
+      />
+    );
+  }
+
+  return (
+    <div className={`${sizeClass} rounded-full border border-sage-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden`}>
+      <BrandLogo size="sm" className="h-6 w-6" />
+    </div>
+  );
+}
 
 export default function Layout() {
   const { user, logout } = useAuth();
-  const { toggleTheme, effectiveTheme } = useTheme();
+  const { effectiveTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -43,84 +67,63 @@ export default function Layout() {
   const SidebarContent = () => (
     <div className="flex flex-col h-full min-h-0">
       {/* Logo */}
-      <div className="px-6 py-4 border-b border-sage-100">
-        <div className="flex items-center gap-2.5">
-          <BrandLogo size="md" className="h-[6.15234375rem] w-[6.15234375rem]" />
-          <span className="font-display text-2xl leading-none font-semibold text-sage-900 dark:text-white">heAlthy</span>
-        </div>
-        <p className="text-xs text-sage-500 dark:text-gray-500 mt-1 font-body">Smart diet planning</p>
-      </div>
-
-      {/* User badge */}
-      <div className="px-6 py-4 border-b border-sage-50">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-sage-600 flex items-center justify-center text-white font-medium text-sm">
-            {user?.name?.[0]?.toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-sage-900 dark:text-white truncate">{user?.name}</p>
-            <span className={user?.isPremium ? 'badge-premium' : 'badge-free'}>
-              {user?.isPremium ? '✨ Premium' : '🌱 Free'}
-            </span>
-          </div>
-        </div>
+      <div className="px-6 h-[93px] border-b border-sage-100 dark:border-gray-800 flex items-center">
+        <button
+          onClick={() => {
+            navigate('/dashboard');
+            setSidebarOpen(false);
+          }}
+          className="w-full max-w-[13rem] mx-auto grid grid-cols-[2.75rem_auto] items-center justify-center gap-2.5 py-1"
+        >
+          <span className="w-11 h-11 rounded-sm overflow-hidden flex items-center justify-center flex-shrink-0 -translate-y-px">
+            <BrandLogo size="md" className="h-20 w-20 scale-[1.85] -translate-y-[1px]" />
+          </span>
+          <span className="font-display text-[2.1rem] leading-[1] font-semibold text-sage-900 dark:text-white -translate-y-[1px]">heAlthy</span>
+        </button>
       </div>
 
       {/* Nav links */}
       <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-0.5">
-        {sidebarItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            onClick={() => setSidebarOpen(false)}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                isActive
-                  ? 'bg-sage-600 text-white shadow-sm'
-                  : 'text-sage-700 dark:text-gray-300 hover:bg-sage-100 dark:hover:bg-gray-800 hover:text-sage-900 dark:hover:text-white'
-              } ${item.premium && !user?.isPremium ? 'opacity-60' : ''}`
-            }
-          >
-            <span className="text-base">{item.icon}</span>
-            <span>{item.label}</span>
-            {item.premium && !user?.isPremium && (
-              <span className="ml-auto text-xs text-amber-500 font-medium">PRO</span>
-            )}
-          </NavLink>
-        ))}
+        {sidebarItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onClick={() => setSidebarOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  isActive
+                    ? 'bg-sage-600 text-white shadow-sm'
+                    : 'text-sage-700 dark:text-gray-300 hover:bg-sage-100 dark:hover:bg-gray-800 hover:text-sage-900 dark:hover:text-white'
+                } ${item.premium && !user?.isPremium ? 'opacity-60' : ''}`
+              }
+            >
+              <span className="text-base">
+                <Icon className="h-4 w-4 stroke-[2]" aria-hidden="true" />
+              </span>
+              <span>{item.label}</span>
+              {item.premium && !user?.isPremium && (
+                <span className="ml-auto text-xs text-amber-500 font-medium">PRO</span>
+              )}
+            </NavLink>
+          );
+        })}
       </nav>
 
       {/* Upgrade CTA for free users */}
       {!user?.isPremium && (
         <div className="mx-4 mb-4 p-4 bg-gradient-to-br from-amber-50 to-sage-50 rounded-xl border border-amber-200">
-          <p className="text-xs font-semibold text-amber-700 mb-1">✨ Upgrade to Premium</p>
+          <p className="text-xs font-semibold text-amber-700 mb-1">Upgrade to Premium</p>
           <p className="text-xs text-sage-600 dark:text-gray-400 mb-3">Unlock personalized plans, AI chat & more</p>
           <NavLink
-            to="/settings"
+            to="/profile"
             className="block text-center text-xs font-medium bg-amber-400 hover:bg-amber-500 text-white px-3 py-2 rounded-lg transition-colors"
           >
             Upgrade Now
           </NavLink>
         </div>
       )}
-
-      {/* Theme toggle + Logout */}
-      <div className="px-3 pb-4 space-y-1">
-        <button
-          onClick={toggleTheme}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-sage-600 dark:text-gray-400 hover:bg-sage-100 dark:bg-gray-700 dark:hover:bg-gray-800 transition-all duration-200"
-        >
-          <span>{effectiveTheme === 'dark' ? '☀️' : '🌙'}</span>
-          <span>{effectiveTheme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-        </button>
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-sage-600 dark:text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all duration-200"
-        >
-          <span>🚪</span>
-          <span>Log Out</span>
-        </button>
-      </div>
     </div>
   );
 
@@ -132,7 +135,7 @@ export default function Layout() {
         <SidebarContent />
       </aside>
 
-      {/* ── MOBILE SLIDE-OUT DRAWER (for extra pages like Food Search, Settings) ── */}
+      {/* ── MOBILE SLIDE-OUT DRAWER ── */}
       {sidebarOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
           <div
@@ -145,7 +148,7 @@ export default function Layout() {
               onClick={() => setSidebarOpen(false)}
               className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-sage-100 dark:bg-gray-700 text-sage-600 dark:text-gray-400 hover:bg-sage-200 transition-colors"
             >
-              ✕
+              <X className="h-4 w-4 stroke-[2]" aria-hidden="true" />
             </button>
             <SidebarContent />
           </aside>
@@ -154,6 +157,29 @@ export default function Layout() {
 
       {/* ── MAIN CONTENT AREA ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
+
+        {/* Desktop Header */}
+        <header className="hidden md:flex items-center justify-end px-6 h-[93px] bg-white dark:bg-gray-900 border-b border-sage-100 dark:border-gray-800">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/profile')}
+              className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-sage-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <UserAvatar user={user} sizeClass="w-10 h-10" />
+              <div className="text-left">
+                <p className="text-sm font-medium text-sage-900 dark:text-white leading-tight">{user?.name}</p>
+                <p className="text-xs text-sage-500 dark:text-gray-400">Profile & Settings</p>
+              </div>
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            >
+              Log Out
+            </button>
+          </div>
+        </header>
 
         {/* Mobile Top Bar */}
         <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-b border-sage-100 dark:border-gray-800 safe-area-top">
@@ -170,21 +196,25 @@ export default function Layout() {
           </button>
 
           {/* Center: logo */}
-          <div className="flex items-center gap-1.5">
-            <BrandLogo size="sm" className="h-[4.833984375rem] w-[4.833984375rem]" />
+          <button onClick={() => navigate('/dashboard')} className="flex items-center gap-1.5">
+            <span className="w-9 h-9 rounded-sm overflow-hidden flex items-center justify-center">
+              <BrandLogo size="sm" className="h-16 w-16 scale-[1.8]" />
+            </span>
             <span className="font-display font-semibold text-sage-900 dark:text-white text-lg">heAlthy</span>
-          </div>
+          </button>
 
-          {/* Right: avatar + premium badge */}
+          {/* Right: profile + logout */}
           <div className="flex items-center gap-2">
-            {user?.isPremium && (
-              <span className="text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-                ✨
-              </span>
-            )}
-            <div className="w-9 h-9 rounded-full bg-sage-600 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
-              {user?.name?.[0]?.toUpperCase()}
-            </div>
+            <button onClick={() => navigate('/profile')} className="rounded-full">
+              <UserAvatar user={user} sizeClass="w-9 h-9" />
+            </button>
+            <button
+              onClick={handleLogout}
+              className="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 flex items-center justify-center"
+              aria-label="Log out"
+            >
+              <LogOut className="h-4 w-4 stroke-[2]" aria-hidden="true" />
+            </button>
           </div>
         </header>
 
@@ -201,6 +231,7 @@ export default function Layout() {
             {bottomNavItems.map((item) => {
               const isActive = location.pathname === item.to;
               const isLocked = item.premium && !user?.isPremium;
+              const Icon = item.icon;
 
               return (
                 <NavLink
@@ -217,9 +248,9 @@ export default function Layout() {
                   <span
                     className={`text-xl mb-0.5 transition-all duration-200 ${
                       isActive ? 'scale-110' : 'scale-100'
-                    } ${isLocked ? 'opacity-50' : ''}`}
+                    } ${isActive ? 'text-sage-700 dark:text-white' : 'text-sage-500 dark:text-gray-400'} ${isLocked ? 'opacity-50' : ''}`}
                   >
-                    {item.icon}
+                    <Icon className="h-5 w-5 stroke-[2]" aria-hidden="true" />
                   </span>
 
                   {/* Label */}

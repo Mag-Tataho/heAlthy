@@ -105,7 +105,7 @@ router.post('/groups', auth, async (req, res) => {
     const validMembers = memberIds.filter(id => friendIds.includes(id));
 
     const group = await Group.create({
-      name: name.trim(), description, emoji: emoji || '💪',
+      name: name.trim(), description, emoji: emoji || 'Dumbbell',
       creator: req.user._id,
       members: [req.user._id, ...validMembers],
       admins:  [req.user._id],

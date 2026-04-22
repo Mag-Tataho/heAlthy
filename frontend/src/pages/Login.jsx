@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, ChartNoAxesColumn, MessageCircle, Moon, Sparkles, Sun, UtensilsCrossed } from '../components/OpenMojiIcons';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import BrandLogo from '../components/BrandLogo';
@@ -39,8 +40,15 @@ export default function Login() {
           <h1 className="font-display text-4xl font-bold mb-4 leading-tight">Eat Smart,<br />Live heAlthy</h1>
           <p className="text-sage-200 text-lg leading-relaxed">AI-powered personalized diet plans tailored to your goals, preferences, and lifestyle.</p>
           <div className="mt-8 grid grid-cols-3 gap-3 text-sm font-medium">
-            {['🥗 AI Plans', '📊 Progress', '💬 AI Coach'].map((item) => (
-              <div key={item} className="bg-white/20 text-white rounded-xl p-3 font-medium">{item}</div>
+            {[
+              { icon: UtensilsCrossed, label: 'AI Plans' },
+              { icon: ChartNoAxesColumn, label: 'Progress' },
+              { icon: MessageCircle, label: 'AI Coach' },
+            ].map((item) => (
+              <div key={item.label} className="bg-white/20 text-white rounded-xl p-3 font-medium inline-flex items-center justify-center gap-2">
+                <item.icon className="h-4 w-4" aria-hidden="true" />
+                {item.label}
+              </div>
             ))}
           </div>
         </div>
@@ -51,7 +59,7 @@ export default function Login() {
         {/* Theme toggle */}
         <button onClick={toggleTheme}
           className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-sage-50 dark:bg-gray-800 flex items-center justify-center hover:bg-sage-100 dark:hover:bg-gray-700 transition-colors text-lg">
-          {effectiveTheme === 'dark' ? '☀️' : '🌙'}
+          {effectiveTheme === 'dark' ? <Sun className="h-4 w-4" aria-hidden="true" /> : <Moon className="h-4 w-4" aria-hidden="true" />}
         </button>
 
         <div className="w-full max-w-md animate-fadeIn">
@@ -82,14 +90,18 @@ export default function Login() {
                 Forgot password?
               </Link>
             </div>
+
             <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 mt-2">
-              {loading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Signing in...</> : 'Sign In →'}
+              {loading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Signing in...</> : <><ArrowRight className="h-4 w-4" aria-hidden="true" />Sign In</>}
             </button>
           </form>
 
           <p className="mt-5 text-center text-sage-600 dark:text-gray-400 text-sm">
             Don't have an account?{' '}
-            <Link to="/register" className="text-sage-700 dark:text-sage-400 font-medium hover:underline">Sign up free →</Link>
+            <Link to="/register" className="text-sage-700 dark:text-sage-400 font-medium hover:underline inline-flex items-center gap-1">
+              Sign up free
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
           </p>
         </div>
       </div>

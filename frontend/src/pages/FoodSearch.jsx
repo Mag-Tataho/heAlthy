@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
+import { Bot, Check, Lightbulb, Search, X } from '../components/OpenMojiIcons';
+import FoodCategoryIcon from '../components/FoodCategoryIcon';
 import api from '../utils/api';
 
 
@@ -17,16 +19,16 @@ const SEARCH_GIFS = [
 const getRandomGif = () => SEARCH_GIFS[Math.floor(Math.random() * SEARCH_GIFS.length)];
 
 const SOURCE_BADGE = {
-  'Open Food Facts': { label: '📦 Real Data', color: 'bg-blue-100 text-blue-700' },
-  'Open Food Facts (expanded search)': { label: '📦 Verified Search+', color: 'bg-teal-100 text-teal-700' },
-  'Open Food Facts + AI Web Sources': { label: '📦 + 🤖 Web Sources', color: 'bg-indigo-100 text-indigo-700' },
-  'Open Food Facts + AI + Local Essentials': { label: '📦 + 🤖 + 🧭 Essentials', color: 'bg-cyan-100 text-cyan-700' },
-  'Open Food Facts + Local Essentials': { label: '📦 + 🧭 Local Essentials', color: 'bg-sky-100 text-sky-700' },
-  'AI Web Sources + Local Essentials': { label: '🤖 + 🧭 Essentials', color: 'bg-emerald-100 text-emerald-700' },
-  'Local Essential Foods': { label: '🧭 Local Essentials', color: 'bg-emerald-100 text-emerald-700' },
-  'AI Web Sources': { label: '🤖 Web-Cited Data', color: 'bg-violet-100 text-violet-700' },
-  'Open Food Facts + AI': { label: '📦 + 🤖 AI', color: 'bg-purple-100 text-purple-700' },
-  'AI Generated': { label: '🤖 AI Generated', color: 'bg-amber-100 text-amber-700' },
+  'Open Food Facts': { label: 'Real Data', color: 'bg-blue-100 text-blue-700' },
+  'Open Food Facts (expanded search)': { label: 'Verified Search+', color: 'bg-teal-100 text-teal-700' },
+  'Open Food Facts + AI Web Sources': { label: 'Web Sources', color: 'bg-indigo-100 text-indigo-700' },
+  'Open Food Facts + AI + Local Essentials': { label: 'Web + Essentials', color: 'bg-cyan-100 text-cyan-700' },
+  'Open Food Facts + Local Essentials': { label: 'Local Essentials', color: 'bg-sky-100 text-sky-700' },
+  'AI Web Sources + Local Essentials': { label: 'AI + Essentials', color: 'bg-emerald-100 text-emerald-700' },
+  'Local Essential Foods': { label: 'Local Essentials', color: 'bg-emerald-100 text-emerald-700' },
+  'AI Web Sources': { label: 'Web-Cited Data', color: 'bg-violet-100 text-violet-700' },
+  'Open Food Facts + AI': { label: 'Data + AI', color: 'bg-purple-100 text-purple-700' },
+  'AI Generated': { label: 'AI Generated', color: 'bg-amber-100 text-amber-700' },
 };
 
 const CATEGORY_COLORS = {
@@ -55,18 +57,26 @@ const CATEGORY_LABELS = {
   other: 'Other',
 };
 
-const EMOJI_BY_CATEGORY = {
-  protein: '🥩',
-  grains: '🌾',
+const CATEGORY_EMOJIS = {
+  protein: '🍗',
+  grains: '🍞',
   vegetables: '🥦',
   fruits: '🍎',
   dairy: '🥛',
   nuts: '🥜',
   legumes: '🫘',
-  snacks: '🍿',
-  beverages: '🥤',
+  snacks: '🍪',
+  beverages: '☕',
   other: '🍽️',
 };
+
+const FOOD_PRIORITY_RULES = [
+  { emoji: '🐟', category: 'protein', pattern: /\b(salmon|tuna|cod|trout|sardine|mackerel|anchovy|herring|catfish|snapper|halibut|pollock|mahi ?mahi|tilapia|fish|sushi|sashimi|shrimp|prawn|tempura|fish cake|surimi|fishball|kikiam)\b/ },
+  { emoji: '🥓', category: 'protein', pattern: /\b(bacon)\b/ },
+  { emoji: '🍗', category: 'protein', pattern: /\b(chicken|turkey|duck|beef|steak|pork|lamb|ham|sausage|meatball|bacon|ribs|egg|eggs|omelet|omelette|fried egg)\b/ },
+  { emoji: '🍞', category: 'grains', pattern: /\b(bread|toast|loaf|croissant|baguette|flatbread|naan|pita|tortilla|roti|pretzel|bagel|pancake|waffle|cereal|oatmeal|oats|porridge|granola|muesli|rice|onigiri|curry rice|curry|noodle|noodles|ramen|udon|soba|pho|pancit|lomi|mami|vermicelli|spaghetti|pasta|macaroni|lasagna|fettuccine|penne|ravioli)\b/ },
+  { emoji: '🍔', category: 'snacks', pattern: /\b(hamburger|cheeseburger|burger|pizza|sandwich|sub|panini|hot dog|hotdog|taco|burrito|wrap|tamale|gyro|shawarma|kebab|falafel|soup|stew|broth|chowder|fondue|paella|salad|pie|shortcake|cake|cupcake|muffin|doughnut|donut|cookie|cookies|biscuit|biscuits)\b/ },
+];
 
 const normalizeEmojiText = (value = '') => String(value)
   .toLowerCase()
@@ -245,16 +255,16 @@ const getFoodDisplayMeta = (food) => {
 
   if (!text) {
     return {
-      emoji: EMOJI_BY_CATEGORY[baseCategory] || EMOJI_BY_CATEGORY.other,
       category: baseCategory,
+      emoji: CATEGORY_EMOJIS[baseCategory] || CATEGORY_EMOJIS.other,
     };
   }
 
-  const matched = FOOD_DRINK_EMOJI_RULES.find((rule) => rule.pattern.test(text));
+  const matched = [...FOOD_PRIORITY_RULES, ...FOOD_DRINK_EMOJI_RULES].find((rule) => rule.pattern.test(text));
   if (matched) {
     return {
-      emoji: matched.emoji,
       category: CATEGORY_KEYS.has(matched.category) ? matched.category : baseCategory,
+      emoji: matched.emoji,
     };
   }
 
@@ -262,8 +272,8 @@ const getFoodDisplayMeta = (food) => {
   const finalCategory = inferredCategory || baseCategory;
 
   return {
-    emoji: EMOJI_BY_CATEGORY[finalCategory] || EMOJI_BY_CATEGORY.other,
     category: finalCategory,
+    emoji: CATEGORY_EMOJIS[finalCategory] || CATEGORY_EMOJIS.other,
   };
 };
 
@@ -299,9 +309,14 @@ const FoodCard = ({ food, onSelect, isSelected }) => {
       }`}
     >
       <div className="flex gap-3">
-        {/* Food emoji */}
+        {/* Food category icon */}
         <div className="w-12 h-12 rounded-xl flex-shrink-0 bg-sage-50 dark:bg-gray-800 flex items-center justify-center">
-          <span className="text-2xl">{display.emoji}</span>
+          <FoodCategoryIcon
+            category={display.category}
+            foodName={food.name}
+            className="h-6 w-6 text-sage-600 dark:text-sage-300"
+            strokeWidth={1.9}
+          />
         </div>
 
         {/* Food details */}
@@ -363,14 +378,19 @@ const FoodDetail = ({ food, onClose }) => {
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-sage-100 dark:bg-gray-700 flex items-center justify-center text-sage-600 dark:text-gray-400 hover:bg-sage-200 flex-shrink-0"
           >
-            ✕
+            <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
           </button>
         </div>
 
         <div className="p-4 space-y-4">
-          {/* Food emoji header */}
+          {/* Food category icon header */}
           <div className="w-16 h-16 rounded-2xl bg-sage-50 dark:bg-gray-800 flex items-center justify-center mx-auto mb-2">
-            <span className="text-4xl">{display.emoji}</span>
+            <FoodCategoryIcon
+              category={display.category}
+              foodName={food.name}
+              className="h-9 w-9 text-sage-600 dark:text-sage-300"
+              strokeWidth={1.9}
+            />
           </div>
 
           {/* Main macros */}
@@ -445,7 +465,10 @@ const FoodDetail = ({ food, onClose }) => {
                   Loading details...
                 </>
               ) : (
-                '🤖 Get AI Health Insights'
+                <>
+                  <Bot className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                  Get AI Health Insights
+                </>
               )}
             </button>
           )}
@@ -459,7 +482,8 @@ const FoodDetail = ({ food, onClose }) => {
                   <ul className="space-y-1">
                     {info.healthBenefits.map((b, i) => (
                       <li key={i} className="text-sm text-sage-700 dark:text-gray-300 flex items-start gap-2">
-                        <span className="text-sage-400 mt-0.5">✓</span>{b}
+                        <Check className="h-4 w-4 text-sage-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                        {b}
                       </li>
                     ))}
                   </ul>
@@ -481,7 +505,10 @@ const FoodDetail = ({ food, onClose }) => {
 
               {info.tips && (
                 <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
-                  <p className="text-xs font-semibold text-amber-700 mb-1">💡 Tip</p>
+                  <p className="text-xs font-semibold text-amber-700 mb-1 inline-flex items-center gap-1">
+                    <Lightbulb className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                    Tip
+                  </p>
                   <p className="text-sm text-amber-800">{info.tips}</p>
                 </div>
               )}
@@ -523,7 +550,7 @@ export default function FoodSearch() {
       setSource(data.source || '');
       setUsedQueries(data.usedQueries || []);
       if (!results.length) {
-        setError('No foods found from Open Food Facts or AI web-cited search. Try another food name or brand.');
+        setError('No foods found from Open Food Facts, web-cited search, or local essentials. Try another food name or brand.');
       }
     } catch (err) {
       const msg = err.response?.data?.error || err.message || 'Search failed';
@@ -541,7 +568,7 @@ export default function FoodSearch() {
 
   const popularSearches = [
     'chicken breast', 'brown rice', 'banana', 'broccoli',
-    'salmon', 'oatmeal', 'eggs', 'avocado', 'sweet potato', 'Greek yogurt',
+    'salmon', 'oatmeal', 'eggs', 'bacon', 'avocado', 'sweet potato', 'Greek yogurt',
   ];
 
   return (
@@ -550,7 +577,7 @@ export default function FoodSearch() {
       <div className="animate-fadeIn">
         <h1 className="section-title">Food Search</h1>
         <p className="text-sage-600 dark:text-gray-400 mt-1">
-          Open Food Facts first, then AI web-cited fallback for missing foods.
+          Open Food Facts first, then web-cited and local fallbacks for missing foods.
         </p>
       </div>
 
@@ -561,7 +588,7 @@ export default function FoodSearch() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="input-field flex-1 text-base"
-          placeholder="Search any food... e.g. chicken, rice, Lucky Me noodles"
+          placeholder="Search any food... e.g. bacon, chicken, rice, Lucky Me noodles"
           autoFocus
         />
         <button
@@ -571,7 +598,7 @@ export default function FoodSearch() {
         >
           {loading ? (
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : '🔍'}
+          ) : <Search className="h-4 w-4" strokeWidth={2} aria-hidden="true" />}
           <span className="hidden sm:inline">Search</span>
         </button>
       </form>
@@ -622,7 +649,7 @@ export default function FoodSearch() {
             onError={(e) => { e.target.style.display = 'none'; }}
           />
           <p className="font-medium text-sage-800 dark:text-gray-200">Searching foods...</p>
-          <p className="text-sm text-sage-400 mt-1">Checking Open Food Facts + AI web-cited sources</p>
+          <p className="text-sm text-sage-400 mt-1">Checking Open Food Facts + web-cited sources + local essentials</p>
         </div>
       )}
 

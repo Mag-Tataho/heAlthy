@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Check } from '../components/OpenMojiIcons';
 import BrandLogo from '../components/BrandLogo';
 
 export default function ResetPasswordSuccess() {
@@ -20,8 +21,8 @@ export default function ResetPasswordSuccess() {
           <span className="font-display text-2xl font-semibold text-sage-900 dark:text-white">heAlthy</span>
         </div>
         <div className="card dark:bg-gray-900 dark:border-gray-800 text-center">
-          <div className="w-14 h-14 rounded-full bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 flex items-center justify-center text-3xl mx-auto mb-4">
-            ✓
+          <div className="w-14 h-14 rounded-full bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 flex items-center justify-center mx-auto mb-4">
+            <Check className="h-7 w-7" aria-hidden="true" />
           </div>
           <h1 className="font-display text-2xl font-semibold text-sage-900 dark:text-white">Password updated</h1>
           <p className="text-sage-600 dark:text-gray-400 text-sm mt-2">

@@ -4,23 +4,81 @@ const Progress = require('../models/Progress');
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();
+const MAX_AVATAR_DATA_URL_LENGTH = Number(process.env.MAX_AVATAR_DATA_URL_LENGTH || 2500000);
+
+const normalizeAvatarDataUrl = (avatarUrl) => {
+  if (avatarUrl === undefined) return undefined;
+  if (avatarUrl === null || avatarUrl === '') return '';
+
+  if (typeof avatarUrl !== 'string') {
+    throw new Error('Profile image must be an image data URL');
+  }
+
+  const trimmed = avatarUrl.trim();
+  if (!trimmed) return '';
+
+  const isSupportedDataUrl = /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(trimmed);
+  if (!isSupportedDataUrl) {
+    throw new Error('Profile image format is not supported. Use PNG, JPG, WEBP, or GIF.');
+  }
+
+  if (trimmed.length > MAX_AVATAR_DATA_URL_LENGTH) {
+    throw new Error('Profile image is too large. Please upload a smaller image.');
+  }
+
+  return trimmed;
+};
 
 // GET /api/profile
 router.get('/', auth, async (req, res) => {
-  res.json({ profile: req.user.profile, reminders: req.user.reminders });
+  res.json({
+    profile: req.user.profile,
+    reminders: req.user.reminders,
+    privacy: req.user.privacy,
+    name: req.user.name,
+    email: req.user.email,
+    avatarUrl: req.user.avatarUrl,
+    isPremium: req.user.isPremium,
+  });
 });
 
 // PUT /api/profile
 router.put('/', auth, async (req, res) => {
   try {
-    const { profile } = req.body;
+    const { profile, avatarUrl, name } = req.body || {};
+    const updateOps = { $set: {} };
+
+    if (profile && typeof profile === 'object') {
+      updateOps.$set.profile = profile;
+    }
+
+    if (typeof name === 'string' && name.trim()) {
+      updateOps.$set.name = name.trim();
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, 'avatarUrl')) {
+      const normalizedAvatar = normalizeAvatarDataUrl(avatarUrl);
+      if (normalizedAvatar) {
+        updateOps.$set.avatarUrl = normalizedAvatar;
+      } else {
+        updateOps.$unset = { avatarUrl: 1 };
+      }
+    }
+
+    if (!Object.keys(updateOps.$set).length && !updateOps.$unset) {
+      return res.status(400).json({ error: 'No profile changes provided' });
+    }
+
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { $set: { profile } },
+      updateOps,
       { new: true, runValidators: true }
     );
     res.json({ user, message: 'Profile updated successfully' });
   } catch (err) {
+    if (err.message?.toLowerCase().includes('profile image')) {
+      return res.status(400).json({ error: err.message });
+    }
     res.status(400).json({ error: err.message || 'Failed to update profile' });
   }
 });
@@ -77,6 +135,7 @@ router.get('/friend/:id', auth, async (req, res) => {
     const result = {
       _id:       friend._id,
       name:      friend.name,
+      avatarUrl: friend.avatarUrl,
       isPremium: friend.isPremium,
       friendCount: friend.friendCount,
       profile:   privacy.showProfile !== false ? friend.profile : null,

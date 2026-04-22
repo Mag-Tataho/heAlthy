@@ -20,7 +20,7 @@ cd heAlthy
 ### 2. Backend setup
 ```bash
 cd backend
-cp .env.example .env       # then fill in your values
+cp .env.backend.example .env       # then fill in your values
 npm install
 npm run dev
 ```
@@ -52,6 +52,12 @@ Open http://localhost:3000
 | `JWT_EXPIRES_IN` | Token expiry (e.g. `7d`) |
 | `GROQ_API_KEY` | From https://console.groq.com |
 | `FRONTEND_URL` | Frontend URL for CORS |
+| `CLIENT_URL` | Frontend URL used by PayMongo redirect links |
+| `PAYMONGO_SECRET_KEY` | Secret key for the PayMongo QRPH premium checkout |
+| `PAYMONGO_PUBLIC_KEY` | Public key if you need it for client-side PayMongo flows |
+| `PAYMONGO_PREMIUM_PRICE_PHP` | Premium checkout amount in PHP (default `199`) |
+| `PAYMONGO_WEBHOOK_SECRET` | Webhook secret used to verify PayMongo events |
+| `ADMIN_SECRET` | Secret header value required by the admin upgrade route |
 | `PASSWORD_RESET_EXPIRES_MINUTES` | Reset link validity in minutes (default `30`) |
 | `EMAIL_ID` | Sender email account used for reset emails |
 | `EMAIL_PASSWORD` | Email app password |
@@ -64,10 +70,28 @@ Optional SMTP overrides (advanced): `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SM
 |----------|-------------|
 | `VITE_API_URL` | Backend API URL |
 
+Use [frontend/.env.example](frontend/.env.example) as the local template for frontend env values.
+
 ---
 
 ## Deployment
-See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for deploying to Netlify + Render + MongoDB Atlas.
+Deploy the frontend to Vercel and keep the backend on a separate Node host.
+
+### Frontend on Vercel
+1. Set the Vercel project root to `frontend/`.
+2. Use `npm run build` as the build command.
+3. Set `VITE_API_URL` in Vercel to your deployed backend API URL.
+4. Keep [frontend/vercel.json](frontend/vercel.json) so React Router routes resolve correctly on refresh.
+
+### Backend hosting
+1. Deploy the Express backend to a Node host such as Render, Railway, Fly.io, or a VPS.
+2. Set `CLIENT_URL` to your Vercel frontend URL.
+3. Set `PAYMONGO_SECRET_KEY`, `PAYMONGO_WEBHOOK_SECRET`, and `ADMIN_SECRET` in the backend environment.
+
+### PayMongo webhook
+1. Point the PayMongo webhook to `https://YOUR-BACKEND-DOMAIN/api/payments/webhook`.
+2. Keep the webhook in Test Mode until you are ready for production.
+3. Use the local test script to verify the full payment flow before shipping.
 
 ---
 

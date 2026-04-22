@@ -1,5 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import {
+  Apple,
+  Check,
+  Dumbbell,
+  Flame,
+  Heart,
+  Leaf,
+  MessageCircle,
+  Plus,
+  Scale,
+  Send,
+  Sparkles,
+  Users,
+  UtensilsCrossed,
+} from '../components/OpenMojiIcons';
 import api from '../utils/api';
 
 function Avatar({ name, size = 'md', premium }) {
@@ -7,7 +22,7 @@ function Avatar({ name, size = 'md', premium }) {
   return (
     <div className={`${s} rounded-full bg-sage-600 flex items-center justify-center text-white font-semibold flex-shrink-0 relative`}>
       {name?.[0]?.toUpperCase() || '?'}
-      {premium && <span className="absolute -top-0.5 -right-0.5 text-xs">✨</span>}
+      {premium && <Sparkles className="absolute -top-0.5 -right-0.5 h-3 w-3" aria-hidden="true" />}
     </div>
   );
 }
@@ -21,8 +36,48 @@ function timeAgo(date) {
   return new Date(date).toLocaleDateString('en-US', { month:'short', day:'numeric' });
 }
 
+const GROUP_ICON_OPTIONS = [
+  { value: 'Dumbbell', label: 'Fitness', Icon: Dumbbell },
+  { value: 'Leaf', label: 'Wellness', Icon: Leaf },
+  { value: 'UtensilsCrossed', label: 'Meals', Icon: UtensilsCrossed },
+  { value: 'MessageCircle', label: 'Chat', Icon: MessageCircle },
+  { value: 'Sparkles', label: 'Sparkles', Icon: Sparkles },
+  { value: 'Users', label: 'Community', Icon: Users },
+  { value: 'Heart', label: 'Support', Icon: Heart },
+  { value: 'Flame', label: 'Challenge', Icon: Flame },
+  { value: 'Scale', label: 'Balance', Icon: Scale },
+  { value: 'Apple', label: 'Nutrition', Icon: Apple },
+];
+
+const LEGACY_GROUP_ICON_MAP = {
+  '💪': 'Dumbbell',
+  '🥗': 'Leaf',
+  '🏃': 'Flame',
+  '🌿': 'Leaf',
+  '⚖️': 'Scale',
+  '🏋️': 'Dumbbell',
+  '🥦': 'Leaf',
+  '🍎': 'Apple',
+  '❤️': 'Heart',
+  '🔥': 'Flame',
+};
+
+const GROUP_ICON_BY_VALUE = Object.fromEntries(GROUP_ICON_OPTIONS.map(({ value, Icon }) => [value, Icon]));
+
+const getGroupIconValue = (value) => {
+  if (GROUP_ICON_BY_VALUE[value]) return value;
+  return LEGACY_GROUP_ICON_MAP[value] || 'Dumbbell';
+};
+
+const getGroupIconComponent = (value) => GROUP_ICON_BY_VALUE[getGroupIconValue(value)] || Dumbbell;
+
+function GroupIcon({ value, className = 'h-5 w-5' }) {
+  const Icon = getGroupIconComponent(value);
+  return <Icon className={className} aria-hidden="true" />;
+}
+
 // Chat window used for both DM and group
-function ChatWindow({ title, messages, onSend, loading, subtitle }) {
+function ChatWindow({ title, titleIcon: TitleIcon, messages, onSend, loading, subtitle }) {
   const [text, setText] = useState('');
   const bottomRef = useRef(null);
   const { user } = useAuth();
@@ -41,9 +96,16 @@ function ChatWindow({ title, messages, onSend, loading, subtitle }) {
   return (
     <div className="flex flex-col h-full">
       {/* Window header */}
-      <div className="flex-shrink-0 px-4 py-3 border-b border-sage-100 dark:border-gray-800 bg-white dark:bg-gray-900">
-        <p className="font-semibold text-sage-900 dark:text-white">{title}</p>
-        {subtitle && <p className="text-xs text-sage-400 dark:text-gray-500">{subtitle}</p>}
+      <div className="flex-shrink-0 px-4 py-3 border-b border-sage-100 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-3">
+        {TitleIcon && (
+          <span className="w-8 h-8 rounded-full bg-sage-50 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
+            <TitleIcon className="h-4 w-4" aria-hidden="true" />
+          </span>
+        )}
+        <div className="min-w-0">
+          <p className="font-semibold text-sage-900 dark:text-white truncate">{title}</p>
+          {subtitle && <p className="text-xs text-sage-400 dark:text-gray-500 truncate">{subtitle}</p>}
+        </div>
       </div>
 
       {/* Messages */}
@@ -51,7 +113,7 @@ function ChatWindow({ title, messages, onSend, loading, subtitle }) {
         {loading && <p className="text-center text-sage-400 dark:text-gray-500 text-sm">Loading messages...</p>}
         {!loading && messages.length === 0 && (
           <div className="text-center py-8">
-            <p className="text-3xl mb-2">💬</p>
+            <MessageCircle className="h-8 w-8 mx-auto mb-2" aria-hidden="true" />
             <p className="text-sage-400 dark:text-gray-500 text-sm">No messages yet. Say hello!</p>
           </div>
         )}
@@ -86,7 +148,9 @@ function ChatWindow({ title, messages, onSend, loading, subtitle }) {
           className="input-field flex-1 text-sm"
           placeholder="Type a message..."
         />
-        <button onClick={send} disabled={!text.trim()} className="btn-primary text-sm px-4">→</button>
+        <button onClick={send} disabled={!text.trim()} className="btn-primary text-sm px-4 inline-flex items-center justify-center">
+          <Send className="h-4 w-4" aria-hidden="true" />
+        </button>
       </div>
     </div>
   );
@@ -106,7 +170,7 @@ export default function Messages() {
   const [showNewGroup,  setShowNewGroup]  = useState(false);
   const [groupName,     setGroupName]     = useState('');
   const [groupDesc,     setGroupDesc]     = useState('');
-  const [groupEmoji,    setGroupEmoji]    = useState('💪');
+  const [groupEmoji,    setGroupEmoji]    = useState('Dumbbell');
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [creating,      setCreating]      = useState(false);
   const [error,         setError]         = useState('');
@@ -187,7 +251,7 @@ export default function Messages() {
       });
       setGroups(g => [data.group, ...g]);
       setShowNewGroup(false);
-      setGroupName(''); setGroupDesc(''); setGroupEmoji('💪'); setSelectedMembers([]);
+      setGroupName(''); setGroupDesc(''); setGroupEmoji('Dumbbell'); setSelectedMembers([]);
       openGroup(data.group);
     } catch (err) { setError(err.response?.data?.error || 'Failed to create group'); }
     finally { setCreating(false); }
@@ -195,9 +259,8 @@ export default function Messages() {
 
   const toggleMember = (id) => setSelectedMembers(m => m.includes(id) ? m.filter(x => x !== id) : [...m, id]);
 
-  const EMOJIS = ['💪','🥗','🏃','🌿','⚖️','🏋️','🥦','🍎','❤️','🔥'];
-
-  const chatTitle   = activeDM ? activeDM.name : activeGroup ? `${activeGroup.emoji} ${activeGroup.name}` : '';
+  const chatTitleIcon = activeDM ? MessageCircle : getGroupIconComponent(activeGroup?.emoji);
+  const chatTitle   = activeDM ? activeDM.name : activeGroup ? activeGroup.name : '';
   const chatSubtitle = activeGroup ? `${activeGroup.members?.length || 0} members` : activeDM ? 'Direct Message' : '';
 
   return (
@@ -210,11 +273,17 @@ export default function Messages() {
           <div className="flex gap-1 p-3 border-b border-sage-100 dark:border-gray-800">
             <button onClick={() => setTab('dm')}
               className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-all ${tab === 'dm' ? 'bg-sage-600 text-white' : 'text-sage-500 dark:text-gray-400 hover:bg-sage-50 dark:hover:bg-gray-800'}`}>
-              💬 DMs
+              <span className="inline-flex items-center justify-center gap-1.5">
+                <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                DMs
+              </span>
             </button>
             <button onClick={() => setTab('groups')}
               className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-all ${tab === 'groups' ? 'bg-sage-600 text-white' : 'text-sage-500 dark:text-gray-400 hover:bg-sage-50 dark:hover:bg-gray-800'}`}>
-              👥 Groups
+              <span className="inline-flex items-center justify-center gap-1.5">
+                <Users className="h-4 w-4" aria-hidden="true" />
+                Groups
+              </span>
             </button>
           </div>
 
@@ -255,13 +324,16 @@ export default function Messages() {
               <div className="p-3">
                 <button onClick={() => setShowNewGroup(true)}
                   className="w-full btn-primary text-sm py-2 mb-3 flex items-center justify-center gap-2">
-                  + New Group
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  New Group
                 </button>
                 {groups.length === 0 && <p className="text-xs text-sage-400 dark:text-gray-500 text-center py-4">No groups yet</p>}
                 {groups.map(g => (
                   <button key={g._id} onClick={() => openGroup(g)}
                     className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-all mb-1 text-left ${activeGroup?._id === g._id ? 'bg-sage-50 dark:bg-gray-800' : 'hover:bg-sage-50 dark:hover:bg-gray-800'}`}>
-                    <div className="w-9 h-9 rounded-full bg-sage-100 dark:bg-gray-700 flex items-center justify-center text-lg flex-shrink-0">{g.emoji}</div>
+                    <div className="w-9 h-9 rounded-full bg-sage-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                      <GroupIcon value={g.emoji} className="h-5 w-5" />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-sage-900 dark:text-white truncate">{g.name}</p>
                       <p className="text-xs text-sage-400 dark:text-gray-500">{g.members?.length || 0} members</p>
@@ -278,6 +350,7 @@ export default function Messages() {
           {(activeDM || activeGroup) ? (
             <ChatWindow
               title={chatTitle}
+              titleIcon={chatTitleIcon}
               subtitle={chatSubtitle}
               messages={activeDM ? dmMessages : groupMessages}
               onSend={activeDM ? sendDM : sendGroup}
@@ -286,7 +359,7 @@ export default function Messages() {
           ) : (
             <div className="flex-1 flex items-center justify-center text-center p-8">
               <div>
-                <p className="text-5xl mb-3">💬</p>
+                <MessageCircle className="h-12 w-12 mx-auto mb-3" aria-hidden="true" />
                 <p className="font-medium text-sage-700 dark:text-gray-300 mb-1">Select a conversation</p>
                 <p className="text-sage-400 dark:text-gray-500 text-sm">Choose a friend or group from the sidebar to start chatting</p>
               </div>
@@ -305,12 +378,13 @@ export default function Messages() {
 
             <div className="space-y-3 mb-4">
               <div>
-                <label className="label">Emoji</label>
-                <div className="flex flex-wrap gap-2">
-                  {EMOJIS.map(e => (
-                    <button key={e} type="button" onClick={() => setGroupEmoji(e)}
-                      className={`w-9 h-9 text-xl rounded-xl border-2 transition-all ${groupEmoji === e ? 'border-sage-500 bg-sage-50 dark:bg-sage-900/40' : 'border-sage-200 dark:border-gray-700'}`}>
-                      {e}
+                <label className="label">Icon</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {GROUP_ICON_OPTIONS.map(({ value, label, Icon }) => (
+                    <button key={value} type="button" onClick={() => setGroupEmoji(value)}
+                      className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 px-3 py-3 transition-all ${groupEmoji === value ? 'border-sage-500 bg-sage-50 dark:bg-sage-900/40' : 'border-sage-200 dark:border-gray-700 hover:bg-sage-50 dark:hover:bg-gray-800'}`}>
+                      <Icon className="h-5 w-5" aria-hidden="true" />
+                      <span className="text-[11px] font-medium text-sage-700 dark:text-gray-300">{label}</span>
                     </button>
                   ))}
                 </div>
@@ -344,7 +418,7 @@ export default function Messages() {
 
             <div className="flex gap-3">
               <button onClick={createGroup} disabled={creating || !groupName.trim()} className="btn-primary flex-1 flex items-center justify-center gap-2">
-                {creating ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Creating...</> : '✅ Create Group'}
+                {creating ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Creating...</> : <><Check className="h-4 w-4" aria-hidden="true" />Create Group</>}
               </button>
               <button onClick={() => { setShowNewGroup(false); setError(''); }} className="btn-secondary">Cancel</button>
             </div>
